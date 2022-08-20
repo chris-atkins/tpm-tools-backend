@@ -1,11 +1,6 @@
-#FROM openjdk:18-jdk-alpine as build
 FROM gradle:jdk18-alpine as build
 
-#RUN apk add gradle
-
 WORKDIR /tpm-tools-backend
-#COPY build.gradle settings.gradle ./
-#COPY src src/
 COPY . ./
 RUN gradle build
 
