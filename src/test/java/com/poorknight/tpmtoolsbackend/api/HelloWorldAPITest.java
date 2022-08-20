@@ -12,7 +12,7 @@ class HelloWorldAPITest {
 	@Test
 	void testHelloReturnsNiceWelcomeString() {
 		SimpleMessage actual = helloWorldAPI.hello();
-		SimpleMessage expected = new SimpleMessage("ohai welcome to data from the backend :(");
+		SimpleMessage expected = new SimpleMessage("ohai welcome to data from the backend :)");
 		assertThat(actual).isEqualTo(expected);
 	}
 }
