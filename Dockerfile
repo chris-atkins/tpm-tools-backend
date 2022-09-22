@@ -2,7 +2,7 @@ FROM gradle:jdk18-alpine as build
 
 WORKDIR /tpm-tools-backend
 COPY . ./
-RUN gradle build
+RUN gradle build -x test
 
 
 FROM openjdk:18-jdk-alpine as runner
