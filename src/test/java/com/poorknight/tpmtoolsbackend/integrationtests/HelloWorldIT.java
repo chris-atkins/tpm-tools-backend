@@ -4,15 +4,15 @@ package com.poorknight.tpmtoolsbackend.integrationtests;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.poorknight.tpmtoolsbackend.TpmToolsBackendApplication;
+import com.poorknight.tpmtoolsbackend.hello.HelloService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -48,8 +48,12 @@ public class HelloWorldIT {
 	@LocalServerPort
 	private int port;
 
+	@SpyBean
+	private HelloService helloService;
+
 	private HttpHeaders headers = new HttpHeaders();
 	private TestRestTemplate restTemplate = new TestRestTemplate();
+
 
 	@Test
 	public void testHelloWorldFormat() throws Exception {
@@ -69,6 +73,21 @@ public class HelloWorldIT {
 		assertThat(fieldList.get(0).getKey()).isEqualTo("message");
 		assertThat(fieldList.get(0).getValue().fields().hasNext()).isFalse();
 	}
+
+
+	@Test
+	void helloEndpointReturns500ErrorWhenFailureRetrievingData() {
+		Mockito.when(helloService.getRandomHelloMessage()).thenThrow(new RuntimeException());
+
+		HttpEntity<String> entity = new HttpEntity<>(null, headers);
+
+		ResponseEntity<String> response = restTemplate.exchange(
+				createURLWithPort("/hello"),
+				HttpMethod.GET, entity, String.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+	}
+
 
 	private String createURLWithPort(String uri) {
 		return "http://localhost:" + port + uri;

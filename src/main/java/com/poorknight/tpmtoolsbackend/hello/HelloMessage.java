@@ -3,8 +3,8 @@ package com.poorknight.tpmtoolsbackend.hello;
 import lombok.*;
 import javax.persistence.*;
 
-@Data
 @Entity
+@Data
 @RequiredArgsConstructor
 @NoArgsConstructor
 @Table(name = "\"HELLO\"")
