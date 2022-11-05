@@ -16,7 +16,7 @@ public class HelloWorldAPI {
 	@GetMapping("/hello")
 	public SimpleMessage hello() {
 		try {
-			return new SimpleMessage(helloService.getRandomHelloMessage().getMessage());
+			return new SimpleMessage("hi.. " + helloService.getRandomHelloMessage().getMessage());
 		} catch (Exception e) {
 			throw new RuntimeException("There was a problem retrieving the data.");
 		}

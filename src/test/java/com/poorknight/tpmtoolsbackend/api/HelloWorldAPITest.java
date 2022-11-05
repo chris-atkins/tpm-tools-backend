@@ -27,7 +27,7 @@ class HelloWorldAPITest {
 		Mockito.when(helloService.getRandomHelloMessage()).thenReturn(new HelloMessage("ohai from DB"));
 
 		SimpleMessage actual = helloWorldAPI.hello();
-		SimpleMessage expected = new SimpleMessage("ohai from DB");
+		SimpleMessage expected = new SimpleMessage("hi.. ohai from DB");
 		assertThat(actual).isEqualTo(expected);
 	}
 
