@@ -1,103 +1,35 @@
 package com.poorknight.tpmtoolsbackend.integrationtests;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.poorknight.tpmtoolsbackend.TpmToolsBackendApplication;
-import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {TpmToolsBackendApplication.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class TaskIT {
+public class TaskIT extends BaseIntegrationTestWithDatabase {
 
-	@Container
-	public static MySQLContainer db = (MySQLContainer) new MySQLContainer(DockerImageName.parse("mysql:8.0.27"))
-			.withDatabaseName("tpm-tools")
-			.withUsername("Chris")
-			.withPassword("theBestPassword");
-
-	@DynamicPropertySource
-	static void registerDBProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.datasource.url", db::getJdbcUrl);
-		registry.add("spring.datasource.username", db::getUsername);
-		registry.add("spring.datasource.password", db::getPassword);
-	}
-
-	@LocalServerPort
-	private int port;
-
-	@SpyBean
-	private TaskService taskService;
-
-	private HttpHeaders headers = new HttpHeaders();
-	private TestRestTemplate restTemplate = new TestRestTemplate();
-
+	@Override
 	@BeforeEach
 	void setUp() {
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		try {
-			deleteAllTasks();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		super.setUp();
+		this.deleteAllTasks();
 	}
 
-	private void deleteAllTasks() throws Exception {
-		Properties connectionProps = new Properties();
-		connectionProps.setProperty("user", db.getUsername());
-		connectionProps.setProperty("password", db.getPassword());
-		Connection connection = DriverManager.getConnection(db.getJdbcUrl(), connectionProps);
-		Statement statement = connection.createStatement();
-
-		statement.executeUpdate("DELETE FROM TASK");
-
-		statement.close();
-		connection.close();
-	}
 
 	@Test
 	public void testResponseHasIdAndTitleOnSuccessfulPOST() throws Exception {
 		String body = "{\"title\": \"the best title\"}";
-		HttpEntity<String> entity = new HttpEntity<>(body, headers);
-
-		ResponseEntity<String> response = restTemplate.exchange(
-				createURLWithPort("/task"),
-				HttpMethod.POST, entity, String.class);
-
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode responseNode = mapper.readTree(response.getBody());
-
-		List<Map.Entry<String, JsonNode>> fieldList = new ArrayList<>();
-		responseNode.fields().forEachRemaining(fieldList::add);
+		ResponseEntity<String> response = makePOSTRequest(body, "/task");
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
+		JsonNode responseNode = getRootJsonNode(response);
+		List<Map.Entry<String, JsonNode>> fieldList = getAllFieldsForNode(responseNode);
 		assertThat(fieldList.size()).isEqualTo(2);
 
 		assertThat(fieldList.get(0).getKey()).isEqualTo("id");
@@ -109,49 +41,38 @@ public class TaskIT {
 		assertThat(fieldList.get(1).getValue().fields().hasNext()).isFalse();
 	}
 
+
 	@Test
 	public void errorsWithIdWhenPOSTingTask() throws Exception {
 		String body = "{\"id\": 55, \"title\": \"the best title\"}";
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
-		ResponseEntity<String> response = restTemplate.exchange(
-				createURLWithPort("/task"),
-				HttpMethod.POST, entity, String.class);
+		ResponseEntity<String> response = makePOSTRequest(body, "/task");
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("do not provide an id")).isGreaterThan(0);
 	}
 
+
 	@Test
 	public void postTaskDoesNotAcceptExtraFields() throws Exception {
 		String body = "{\"someExtraField\": \"hi\", \"title\": \"the best title\"}";
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
-		ResponseEntity<String> response = restTemplate.exchange(
-				createURLWithPort("/task"),
-				HttpMethod.POST, entity, String.class);
+		ResponseEntity<String> response =makePOSTRequest(body, "/task");
 
-		System.out.println(response.getBody());
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("Unrecognized field \\\"someExtraField\\\"")).isGreaterThan(0);
 	}
+
 
 	@Test
 	void getAllTasksReturnsAListOfTasksThatHaveBeenSaved() throws Exception {
 		postNewTask("{\"title\": \"the best title\"}");
 		postNewTask("{\"title\": \"the second best title\"}");
 
-		ResponseEntity<String> response = restTemplate.exchange(
-				createURLWithPort("/task"),
-				HttpMethod.GET, null, String.class);
-
+		ResponseEntity<String> response = makeGETRequest("/task");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode responseNode = mapper.readTree(response.getBody());
-
+		JsonNode responseNode = getRootJsonNode(response);
 		assertThat(responseNode.isArray()).isTrue();
 
 		List<JsonNode> taskResponseList = new ArrayList<>();
@@ -163,9 +84,9 @@ public class TaskIT {
 		assertThatNodeIsWellFormedTaskWithIdAndTitleOf(taskResponseList.get(0), "the best title");
 	}
 
+
 	private void assertThatNodeIsWellFormedTaskWithIdAndTitleOf(JsonNode nodeToCheck, String title) {
-		List<Map.Entry<String, JsonNode>> fieldList = new ArrayList<>();
-		nodeToCheck.fields().forEachRemaining(fieldList::add);
+		List<Map.Entry<String, JsonNode>> fieldList = getAllFieldsForNode(nodeToCheck);
 
 		assertThat(fieldList.size()).isEqualTo(2);
 
@@ -178,18 +99,10 @@ public class TaskIT {
 		assertThat(fieldList.get(1).getValue().fields().hasNext()).isFalse();
 	}
 
+
 	private void postNewTask(String taskJsonString) {
-		String body = taskJsonString;
-		HttpEntity<String> entity = new HttpEntity<>(body, headers);
-
-		ResponseEntity<String> response = restTemplate.exchange(
-				createURLWithPort("/task"),
-				HttpMethod.POST, entity, String.class);
-
+		ResponseEntity<String> response = makePOSTRequest(taskJsonString, "/task");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 	}
 
-	private String createURLWithPort(String uri) {
-		return "http://localhost:" + port + uri;
-	}
 }

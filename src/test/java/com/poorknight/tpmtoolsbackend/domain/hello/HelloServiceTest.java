@@ -1,6 +1,6 @@
 package com.poorknight.tpmtoolsbackend.domain.hello;
 
-import com.poorknight.tpmtoolsbackend.domain.BaseTestWithDatabase;
+import com.poorknight.tpmtoolsbackend.domain.BaseUnitTestWithDatabase;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.*;
@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-class HelloServiceTest extends BaseTestWithDatabase {
+class HelloServiceTest extends BaseUnitTestWithDatabase {
 
 	@Autowired
 	private HelloService helloService;

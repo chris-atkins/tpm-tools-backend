@@ -1,6 +1,6 @@
 package com.poorknight.tpmtoolsbackend.domain.tasks;
 
-import com.poorknight.tpmtoolsbackend.domain.BaseTestWithDatabase;
+import com.poorknight.tpmtoolsbackend.domain.BaseUnitTestWithDatabase;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,20 +14,15 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-class TaskServiceTest extends BaseTestWithDatabase {
+class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Autowired
 	private TaskService taskService;
 
 	@BeforeEach
 	public void setUp() {
-		try {
-			deleteAllTasks();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		this.deleteAllTasks();
 	}
-
 
 	@Test
 	void canSaveANewTaskWithATitle() throws Exception {
@@ -161,12 +156,4 @@ class TaskServiceTest extends BaseTestWithDatabase {
 		return found;
 	}
 
-	private void deleteAllTasks() throws Exception {
-		Connection connection = this.getConnection();
-		Statement statement = connection.createStatement();
-		statement.executeUpdate("DELETE FROM TASK");
-
-		statement.close();
-		connection.close();
-	}
 }
