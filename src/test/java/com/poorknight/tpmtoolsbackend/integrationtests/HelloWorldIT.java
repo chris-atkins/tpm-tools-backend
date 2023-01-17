@@ -4,7 +4,7 @@ package com.poorknight.tpmtoolsbackend.integrationtests;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.poorknight.tpmtoolsbackend.TpmToolsBackendApplication;
-import com.poorknight.tpmtoolsbackend.hello.HelloService;
+import com.poorknight.tpmtoolsbackend.domain.hello.HelloService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;

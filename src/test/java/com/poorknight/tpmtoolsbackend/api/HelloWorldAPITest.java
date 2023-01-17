@@ -1,8 +1,8 @@
 package com.poorknight.tpmtoolsbackend.api;
 
 import com.poorknight.tpmtoolsbackend.api.entity.response.SimpleMessage;
-import com.poorknight.tpmtoolsbackend.hello.HelloMessage;
-import com.poorknight.tpmtoolsbackend.hello.HelloService;
+import com.poorknight.tpmtoolsbackend.domain.hello.HelloMessage;
+import com.poorknight.tpmtoolsbackend.domain.hello.HelloService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

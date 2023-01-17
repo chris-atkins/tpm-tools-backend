@@ -1,6 +1,6 @@
-package com.poorknight.tpmtoolsbackend.hello;
+package com.poorknight.tpmtoolsbackend.domain.hello;
 
-import com.poorknight.tpmtoolsbackend.BaseTestWithDatabase;
+import com.poorknight.tpmtoolsbackend.domain.BaseTestWithDatabase;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.*;

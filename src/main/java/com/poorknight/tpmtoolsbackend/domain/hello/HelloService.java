@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend.hello;
+package com.poorknight.tpmtoolsbackend.domain.hello;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

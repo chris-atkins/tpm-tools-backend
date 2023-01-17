@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend;
+package com.poorknight.tpmtoolsbackend.domain;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -14,8 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.TestPropertySourceUtils;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.sql.Connection;
@@ -23,20 +21,23 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-@Testcontainers
 @DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = {Repository.class, Service.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(initializers = {BaseTestWithDatabase.DataSourceInitializer.class})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BaseTestWithDatabase {
 
-	@Container
 	public static MySQLContainer db = (MySQLContainer) new MySQLContainer(DockerImageName.parse("mysql:8.0.27"))
 			.withDatabaseName("tpm-tools")
 			.withUsername("Chris")
 			.withPassword("theBestPassword");
 
-	protected String url;
+	protected static String url;
+
+	static {
+		db.start();
+		url = db.getJdbcUrl();
+	}
 
 	public static class DataSourceInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -51,10 +52,6 @@ public class BaseTestWithDatabase {
 		}
 	}
 
-	@BeforeEach
-	public void setUp() {
-		url = db.getJdbcUrl();
-	}
 
 	protected Connection getConnection() throws SQLException {
 		Properties connectionProps = new Properties();

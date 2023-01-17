@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend.hello;
+package com.poorknight.tpmtoolsbackend.domain.hello;
 
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
