@@ -81,7 +81,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 		String expectedResult = String.format("""
 				{
-					"id": %x,
+					"id": %d,
 					"title": "a fine title" 
 				}
 				""", taskId);
@@ -99,10 +99,10 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
-				{"id": %x, "someExtraField": "hi", "title": "the best title"}
+				{"id": %d, "someExtraField": "hi", "title": "the best title"}
 				""", taskId);
 
-		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+		ResponseEntity<String> response = makePUTRequest(body, "/task/" + taskId);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("Unrecognized field \\\"someExtraField\\\"")).isGreaterThan(0);
@@ -122,7 +122,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 				{"title": "the best title"}
 				""";
 
-		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+		ResponseEntity<String> response = makePUTRequest(body, "/task/" + taskId);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("provide an id")).isGreaterThan(0);
@@ -134,10 +134,10 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
-				{"id": %x, "title": "the best title"}
+				{"id": %d, "title": "the best title"}
 				""", (taskId+ 1));
 
-		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+		ResponseEntity<String> response = makePUTRequest(body, "/task/" + taskId);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("id must match")).isGreaterThan(0);
@@ -149,10 +149,10 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
-				{"id": %x, "title": "first title"}
+				{"id": %d, "title": "first title"}
 				""", taskId);
 
-		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+		ResponseEntity<String> response = makePUTRequest(body, "/task/" + taskId);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 	}
 

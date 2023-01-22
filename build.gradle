@@ -53,5 +53,8 @@ tasks.named('test') {
 					"${result.failedTestCount} failures, " +
 					"${result.skippedTestCount} skipped)")
 	}
+	testLogging {
+		showStandardStreams = true
+	}
 }
 
