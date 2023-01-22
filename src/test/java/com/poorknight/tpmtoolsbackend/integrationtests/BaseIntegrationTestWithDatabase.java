@@ -62,17 +62,22 @@ public class BaseIntegrationTestWithDatabase extends BaseTestWithDatabase {
 
 
 	protected ResponseEntity<String> makeGETRequest(String path) {
-		HttpEntity<String> entity = new HttpEntity<>(null, headers);
-		return restTemplate.exchange(
-				createURLWithPort(path),
-				HttpMethod.GET, entity, String.class);
+		return buildRequestForRestMethod(null, path, HttpMethod.GET);
 	}
 
 
 	protected ResponseEntity<String> makePOSTRequest(String jsonRequestBodyString, String path) {
+		return buildRequestForRestMethod(jsonRequestBodyString, path, HttpMethod.POST);
+	}
+
+
+	protected ResponseEntity<String> makePUTRequest(String jsonRequestBodyString, String path) {
+		return buildRequestForRestMethod(jsonRequestBodyString, path, HttpMethod.PUT);
+	}
+
+
+	private ResponseEntity<String> buildRequestForRestMethod(String jsonRequestBodyString, String path, HttpMethod restMethod) {
 		HttpEntity<String> entity = new HttpEntity<>(jsonRequestBodyString, headers);
-		return restTemplate.exchange(
-				createURLWithPort(path),
-				HttpMethod.POST, entity, String.class);
+		return restTemplate.exchange(createURLWithPort(path), restMethod, entity, String.class);
 	}
 }

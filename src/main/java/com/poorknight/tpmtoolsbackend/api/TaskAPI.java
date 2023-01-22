@@ -6,10 +6,7 @@ import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
@@ -20,6 +17,17 @@ public class TaskAPI {
 
 	@Autowired
 	private TaskService taskService;
+
+	@GetMapping(value = "/task")
+	public List<SimpleTask> getTasks() {
+		List<Task> allTasks = taskService.getAllTasks();
+
+		List<SimpleTask> responseTasks = new ArrayList<>(allTasks.size());
+		for (Task task: allTasks) {
+			responseTasks.add(SimpleTask.fromDomainObject(task));
+		}
+		return responseTasks;
+	}
 
 	@PostMapping(value = "/task", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public SimpleTask postTask(@RequestBody SimpleTask simpleTask) {
@@ -37,14 +45,24 @@ public class TaskAPI {
 		}
 	}
 
-	@GetMapping(value = "/task")
-	public List<SimpleTask> getTasks() {
-		List<Task> allTasks = taskService.getAllTasks();
 
-		List<SimpleTask> responseTasks = new ArrayList<>(allTasks.size());
-		for (Task task: allTasks) {
-			responseTasks.add(SimpleTask.fromDomainObject(task));
+	@PutMapping(value = "/task/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public SimpleTask putTask(@PathVariable long taskId, @RequestBody SimpleTask apiTaskBody) {
+		validateTaskToPutThrowingExceptions(taskId, apiTaskBody);
+
+		Task taskToUpdate = apiTaskBody.toDomainObject();
+		Task updatedTask = taskService.updateTask(taskToUpdate);
+		return SimpleTask.fromDomainObject(updatedTask);
+	}
+
+	private void validateTaskToPutThrowingExceptions(long taskId, SimpleTask simpleTask) {
+		if (simpleTask.getId() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When PUTing a Task, make sure to provide an id in the request body.");
 		}
-		return responseTasks;
+		if (simpleTask.getId() != taskId) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When PUTing a Task, the url id and request body id must match.");
+		}
 	}
 }

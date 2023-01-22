@@ -3,6 +3,8 @@ package com.poorknight.tpmtoolsbackend.integrationtests;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.http.*;
 
 import java.util.ArrayList;
@@ -43,7 +45,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 
 	@Test
-	public void errorsWithIdWhenPOSTingTask() throws Exception {
+	public void errorsIfAnIdIsProvidedWhenPOSTingTask() throws Exception {
 		String body = "{\"id\": 55, \"title\": \"the best title\"}";
 
 		ResponseEntity<String> response = makePOSTRequest(body, "/task");
@@ -63,6 +65,104 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		assertThat(response.getBody().indexOf("Unrecognized field \\\"someExtraField\\\"")).isGreaterThan(0);
 	}
 
+	@Test
+	void putTaskCanChangeTitleOnAnExistingTask() throws Exception {
+		postNewTask("{\"title\": \"the best title\"}");
+
+		ResponseEntity<String> getResponse = makeGETRequest("/task");
+		List<JsonNode> taskList = buildTaskListFromGetResponse(getResponse);
+		assertThat(taskList.size()).isEqualTo(1);
+		assertThat(taskList.get(0).get("title").asText()).isEqualTo("the best title");
+
+		Long taskId = taskList.get(0).get("id").asLong();
+
+		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"title\": \"a fine title\"}";
+		ResponseEntity<String> putResponse = makePUTRequest(jsonTaskToUpdate, "/task/" + taskId);
+
+		String expectedResult = String.format("""
+				{
+					"id": %x,
+					"title": "a fine title" 
+				}
+				""", taskId);
+		JSONAssert.assertEquals(expectedResult, putResponse.getBody(), JSONCompareMode.STRICT);
+
+		getResponse = makeGETRequest("/task");
+		taskList = buildTaskListFromGetResponse(getResponse);
+		assertThat(taskList.size()).isEqualTo(1);
+		assertThat(taskList.get(0).get("title").asText()).isEqualTo("a fine title");
+	}
+
+	@Test
+	public void putTaskDoesNotAcceptExtraFields() throws Exception {
+		ResponseEntity<String> postResponse = postNewTask("{\"title\": \"first title\"}");
+		Long taskId = getTaskIdFromPostResponse(postResponse);
+
+		String body = String.format("""
+				{"id": %x, "someExtraField": "hi", "title": "the best title"}
+				""", taskId);
+
+		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().indexOf("Unrecognized field \\\"someExtraField\\\"")).isGreaterThan(0);
+	}
+
+	private Long getTaskIdFromPostResponse(ResponseEntity<String> postResponse) throws Exception {
+		JsonNode responseNode = getRootJsonNode(postResponse);
+		return responseNode.get("id").asLong();
+	}
+
+	@Test
+	public void putTaskDoesNotAcceptBodyWithNoId() throws Exception {
+		ResponseEntity<String> postResponse = postNewTask("{\"title\": \"first title\"}");
+		Long taskId = getTaskIdFromPostResponse(postResponse);
+
+		String body = """
+				{"title": "the best title"}
+				""";
+
+		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().indexOf("provide an id")).isGreaterThan(0);
+	}
+
+	@Test
+	public void putTaskDoesNotAcceptBodyWithMismatchedIdComparedToUrl() throws Exception {
+		ResponseEntity<String> postResponse = postNewTask("{\"title\": \"first title\"}");
+		Long taskId = getTaskIdFromPostResponse(postResponse);
+
+		String body = String.format("""
+				{"id": %x, "title": "the best title"}
+				""", (taskId+ 1));
+
+		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().indexOf("id must match")).isGreaterThan(0);
+	}
+
+	@Test
+	public void putTaskAcceptsBodyWithNoChanges() throws Exception {
+		ResponseEntity<String> postResponse = postNewTask("{\"title\": \"first title\"}");
+		Long taskId = getTaskIdFromPostResponse(postResponse);
+
+		String body = String.format("""
+				{"id": %x, "title": "first title"}
+				""", taskId);
+
+		ResponseEntity<String> response =makePUTRequest(body, "/task/" + taskId);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
+
+
+	private List<JsonNode> buildTaskListFromGetResponse(ResponseEntity<String> response) throws Exception {
+		JsonNode responseNode = getRootJsonNode(response);
+		List<JsonNode> taskResponseList = new ArrayList<>();
+		responseNode.elements().forEachRemaining(taskResponseList::add);
+		return taskResponseList;
+	}
 
 	@Test
 	void getAllTasksReturnsAListOfTasksThatHaveBeenSaved() throws Exception {
@@ -100,9 +200,10 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	}
 
 
-	private void postNewTask(String taskJsonString) {
+	private ResponseEntity<String> postNewTask(String taskJsonString) {
 		ResponseEntity<String> response = makePOSTRequest(taskJsonString, "/task");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		return response;
 	}
 
 }

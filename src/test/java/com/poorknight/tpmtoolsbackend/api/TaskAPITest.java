@@ -54,6 +54,45 @@ public class TaskAPITest {
 	}
 
 	@Test
+	void putTaskReturnsResponseFromServiceAfterCallingUpdate() {
+		String taskTitle = "changed";
+		long existingTaskId = 55L;
+
+		Task inputTask = new Task(existingTaskId, taskTitle);
+		Task savedTask = new Task(existingTaskId, taskTitle);
+		Mockito.when(taskService.updateTask(inputTask)).thenReturn(savedTask);
+
+		SimpleTask response = api.putTask(55L, new SimpleTask(existingTaskId, taskTitle));
+
+		assertThat(response.getTitle()).isEqualTo(taskTitle);
+		assertThat(response.getId()).isEqualTo(existingTaskId);
+	}
+
+	@Test
+	void putTaskDoesNotAcceptATaskWithoutId() {
+		SimpleTask task = new SimpleTask(null,"something");
+
+		try {
+			api.putTask(1L, task);
+			Assertions.fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When PUTing a Task, make sure to provide an id in the request body.\"");
+		}
+	}
+
+	@Test
+	void putTaskDoesNotAcceptMismatchedIdsInUrlAndBody() {
+		SimpleTask task = new SimpleTask(5L,"something");
+
+		try {
+			api.putTask(7L, task);
+			Assertions.fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When PUTing a Task, the url id and request body id must match.\"");
+		}
+	}
+
+	@Test
 	void getTasksRetrievesAllTasksFromServiceAndIncludesIds() {
 		Task task1 = new Task(5L, "st");
 		Task task2 = new Task(6L, "st else");
