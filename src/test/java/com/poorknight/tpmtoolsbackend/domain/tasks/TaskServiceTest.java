@@ -124,6 +124,59 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 		assertThat(updatedTask.getId()).isEqualTo(savedTask.getId());
 	}
 
+
+	@Test
+	void updateTaskThrowsExceptionIfIdDoesNotExist() throws Exception {
+		Task savedTask = new Task(12L, "Work to do!");
+
+		try {
+			Task updatedTask = taskService.updateTask(savedTask);
+			fail("expecting exception");
+		} catch (TaskService.TaskNotFoundException e) {
+			assertThat(e.getMessage()).contains("Cannot update task with id 12. It does not exist.");
+		} catch (Exception e) {
+			fail("got the wrong type of excpetion");
+		}
+	}
+
+
+	@Test
+	void canDeleteATask() throws Exception {
+		Task savedTask = taskService.saveNewTask(new Task("Work to do!"));
+		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
+
+		taskService.deleteTask(savedTask.getId());
+
+		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
+	}
+
+
+	@Test
+	void deletingATaskReturnsTheDeletedTask() throws Exception {
+		Task savedTask = taskService.saveNewTask(new Task("Work to do!"));
+		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
+
+		Task deletedTask = taskService.deleteTask(savedTask.getId());
+
+		assertThat(deletedTask.getId()).isEqualTo(savedTask.getId());
+		assertThat(deletedTask.getTitle()).isEqualTo("Work to do!");
+	}
+
+
+	@Test
+	void deletingANonExistentTaskThrowsError() throws Exception {
+
+		try {
+			taskService.deleteTask(55L);
+			fail("Expecting exception");
+		} catch (TaskService.TaskNotFoundException e) {
+			assertThat(e.getMessage()).contains("Cannot delete task with id 55. It does not exist.");
+		} catch (Exception e) {
+			fail("wrong type of exception thrown");
+		}
+	}
+
+
 	private int findTotalNumberOfTasks() throws Exception {
 		Connection connection = this.getConnection();
 		Statement statement = connection.createStatement();

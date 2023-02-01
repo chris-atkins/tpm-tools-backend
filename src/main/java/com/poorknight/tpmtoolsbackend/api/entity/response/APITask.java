@@ -10,13 +10,13 @@ import lombok.ToString;
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-public class SimpleTask {
+public class APITask {
 
 	private final Long id;
 	private final String title;
 
-	public static SimpleTask fromDomainObject(Task task) {
-		return new SimpleTask(task.getId(), task.getTitle());
+	public static APITask fromDomainObject(Task task) {
+		return new APITask(task.getId(), task.getTitle());
 	}
 
 	public Task toDomainObject() {

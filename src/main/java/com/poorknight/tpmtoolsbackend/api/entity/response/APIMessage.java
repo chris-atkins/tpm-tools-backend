@@ -9,7 +9,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-public class SimpleMessage {
+public class APIMessage {
 
 	private String message;
 }

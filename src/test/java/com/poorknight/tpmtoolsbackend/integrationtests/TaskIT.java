@@ -157,12 +157,41 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	}
 
 
+	@Test
+	void deleteTaskRemovesATask() throws Exception {
+		ResponseEntity<String> postResponse = postNewTask("{\"title\": \"a title\"}");
+		Long taskId = getTaskIdFromPostResponse(postResponse);
+
+		assertThat(findNumberOfTasksReturnedFromGetAll()).isEqualTo(1);
+
+		ResponseEntity<String> response = makeDELETERequest("/task/" + taskId);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(findNumberOfTasksReturnedFromGetAll()).isEqualTo(0);
+	}
+
+
+	@Test
+	void deleteTask404sIfNoTaskExistsWithPassedId() throws Exception {
+		ResponseEntity<String> response = makeDELETERequest("/task/74");
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+
+	private int findNumberOfTasksReturnedFromGetAll() throws Exception {
+		ResponseEntity<String> response = makeGETRequest("/task");
+		List<JsonNode> tasks = buildTaskListFromGetResponse(response);
+		return tasks.size();
+	}
+
+
 	private List<JsonNode> buildTaskListFromGetResponse(ResponseEntity<String> response) throws Exception {
 		JsonNode responseNode = getRootJsonNode(response);
 		List<JsonNode> taskResponseList = new ArrayList<>();
 		responseNode.elements().forEachRemaining(taskResponseList::add);
 		return taskResponseList;
 	}
+
 
 	@Test
 	void getAllTasksReturnsAListOfTasksThatHaveBeenSaved() throws Exception {

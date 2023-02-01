@@ -1,6 +1,6 @@
 package com.poorknight.tpmtoolsbackend.api;
 
-import com.poorknight.tpmtoolsbackend.api.entity.response.SimpleMessage;
+import com.poorknight.tpmtoolsbackend.api.entity.response.APIMessage;
 import com.poorknight.tpmtoolsbackend.domain.hello.HelloService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,9 +13,9 @@ public class HelloWorldAPI {
 	private HelloService helloService;
 
 	@GetMapping("/hello")
-	public SimpleMessage hello() {
+	public APIMessage hello() {
 		try {
-			return new SimpleMessage(helloService.getRandomHelloMessage().getMessage());
+			return new APIMessage(helloService.getRandomHelloMessage().getMessage());
 		} catch (Exception e) {
 			throw new RuntimeException("There was a problem retrieving the data.");
 		}

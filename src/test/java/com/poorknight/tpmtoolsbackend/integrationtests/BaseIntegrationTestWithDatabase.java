@@ -66,6 +66,11 @@ public class BaseIntegrationTestWithDatabase extends BaseTestWithDatabase {
 	}
 
 
+	protected ResponseEntity<String> makeDELETERequest(String path) {
+		return buildRequestForRestMethod(null, path, HttpMethod.DELETE);
+	}
+
+
 	protected ResponseEntity<String> makePOSTRequest(String jsonRequestBodyString, String path) {
 		return buildRequestForRestMethod(jsonRequestBodyString, path, HttpMethod.POST);
 	}

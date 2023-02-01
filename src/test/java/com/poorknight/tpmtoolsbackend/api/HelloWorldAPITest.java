@@ -1,6 +1,6 @@
 package com.poorknight.tpmtoolsbackend.api;
 
-import com.poorknight.tpmtoolsbackend.api.entity.response.SimpleMessage;
+import com.poorknight.tpmtoolsbackend.api.entity.response.APIMessage;
 import com.poorknight.tpmtoolsbackend.domain.hello.HelloMessage;
 import com.poorknight.tpmtoolsbackend.domain.hello.HelloService;
 import org.assertj.core.api.Assertions;
@@ -26,8 +26,8 @@ class HelloWorldAPITest {
 	void testHelloReturnsNiceWelcomeString() {
 		Mockito.when(helloService.getRandomHelloMessage()).thenReturn(new HelloMessage("ohai from DB"));
 
-		SimpleMessage actual = helloWorldAPI.hello();
-		SimpleMessage expected = new SimpleMessage("ohai from DB");
+		APIMessage actual = helloWorldAPI.hello();
+		APIMessage expected = new APIMessage("ohai from DB");
 		assertThat(actual).isEqualTo(expected);
 	}
 

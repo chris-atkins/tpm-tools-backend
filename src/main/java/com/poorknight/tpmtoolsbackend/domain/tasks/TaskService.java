@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -26,6 +27,10 @@ public class TaskService {
 		if (taskToUpdate.getId() == null) {
 			throw new RuntimeException("Must specify an ID to update a Task - that is how we know what Task to update! Try the saveNewTask method instead :)");
 		}
+		Optional<Task> task = this.getTask(taskToUpdate.getId());
+		if (task.isEmpty()) {
+			throw new TaskNotFoundException("Cannot update task with id " + taskToUpdate.getId() + ". It does not exist.");
+		}
 		return repository.save(taskToUpdate);
 	}
 
@@ -37,5 +42,25 @@ public class TaskService {
 			taskList.add(task);
 		}
 		return taskList;
+	}
+
+	public Task deleteTask(Long taskId) {
+		Optional<Task> task = this.getTask(taskId);
+		if (task.isEmpty()) {
+			throw new TaskNotFoundException("Cannot delete task with id " + taskId + ". It does not exist.");
+		}
+		repository.deleteById(taskId);
+		return task.get();
+	}
+
+	private Optional<Task> getTask(Long taskId) {
+		return repository.findById(taskId);
+	}
+
+	public static class TaskNotFoundException extends RuntimeException {
+
+		public TaskNotFoundException(String message) {
+			super(message);
+		}
 	}
 }
