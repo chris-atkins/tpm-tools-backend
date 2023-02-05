@@ -75,7 +75,7 @@ public class TaskAPI {
 		}
 	}
 
-	@DeleteMapping(value = "/task/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@DeleteMapping(value = "/task/{taskId}")
 	public APITask deleteTask(@PathVariable Long taskId) {
 		try {
 			Task deletedTask = taskService.deleteTask(taskId);
