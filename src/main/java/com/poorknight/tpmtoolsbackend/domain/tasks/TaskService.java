@@ -17,21 +17,42 @@ public class TaskService {
 	private TaskRepository repository;
 
 	public Task saveNewTask(Task task) {
-		if (task.getId() != null) {
-			throw new RuntimeException("Cannot specify an ID on a new Task!  Try the updateTask method instead :)");
-		}
+		throwExceptionIfInvalidTaskForSaving(task);
 		return repository.save(task);
 	}
 
+	private void throwExceptionIfInvalidTaskForSaving(Task task) {
+		if (task.getId() != null) {
+			throw new RuntimeException("Cannot specify an ID on a new Task!  Try the updateTask method instead :)");
+		}
+		if (task.getTitle() == null) {
+			throw new RuntimeException("Must specify a title for a new Task. An empty string is ok, null is not.  No action taken.");
+		}
+		if (task.getSize() == null) {
+			throw new RuntimeException("Must specify a size for a new Task.  No action taken.");
+		}
+	}
+
 	public Task updateTask(Task taskToUpdate) {
+		throwExceptionIfInvalidTaskForUpdating(taskToUpdate);
+		return repository.save(taskToUpdate);
+	}
+
+	private void throwExceptionIfInvalidTaskForUpdating(Task taskToUpdate) {
 		if (taskToUpdate.getId() == null) {
 			throw new RuntimeException("Must specify an ID to update a Task - that is how we know what Task to update! Try the saveNewTask method instead :)");
 		}
+		if (taskToUpdate.getTitle() == null) {
+			throw new RuntimeException("Must specify a title while updating a Task. A full task must be given, including fields that are not changing.");
+		}
+		if (taskToUpdate.getSize() == null) {
+			throw new RuntimeException("Must specify a size while updating a Task. A full task must be given, including fields that are not changing.");
+		}
+
 		Optional<Task> task = this.getTask(taskToUpdate.getId());
 		if (task.isEmpty()) {
 			throw new TaskNotFoundException("Cannot update task with id " + taskToUpdate.getId() + ". It does not exist.");
 		}
-		return repository.save(taskToUpdate);
 	}
 
 	public List<Task> getAllTasks() {

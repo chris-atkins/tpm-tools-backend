@@ -30,21 +30,23 @@ public class TaskAPITest {
 	@Test
 	void postTaskReturnsResponseFromTheServiceThatIncludesAnId() {
 		String taskTitle = "new task 1";
+		Integer taskSize = 4;
 		long idFromService = 5L;
 
-		Task inputTask = new Task(taskTitle);
-		Task savedTask = new Task(idFromService, taskTitle);
+		Task inputTask = new Task(taskTitle, taskSize);
+		Task savedTask = new Task(idFromService, taskTitle, taskSize);
 		Mockito.when(taskService.saveNewTask(inputTask)).thenReturn(savedTask);
 
-		APITask response = api.postTask(new APITask(null, taskTitle));
+		APITask response = api.postTask(new APITask(null, taskTitle, taskSize));
 
 		assertThat(response.getTitle()).isEqualTo(taskTitle);
+		assertThat(response.getSize()).isEqualTo(taskSize);
 		assertThat(response.getId()).isEqualTo(idFromService);
 	}
 
 	@Test
 	void postTaskDoesNotAcceptAnId() {
-		APITask task = new APITask(3L, "something");
+		APITask task = new APITask(3L, "something", 4);
 
 		try {
 			api.postTask(task);
@@ -55,23 +57,69 @@ public class TaskAPITest {
 	}
 
 	@Test
+	void postTaskRequiresTitle() {
+		APITask task = new APITask(null, null, 4);
+
+		try {
+			api.postTask(task);
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a title is mandatory.  An empty string is valid.\"");
+		}
+	}
+
+
+	@Test
+	void postTaskRequiresSize() {
+		APITask task = new APITask(null, "something", null);
+
+		try {
+			api.postTask(task);
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a positive integer for size is mandatory.\"");
+		}
+	}
+
+
+	@Test
+	void postTaskRequiresAPositiveSize() {
+		try {
+			api.postTask(new APITask(null, "something", 0));
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a positive integer for size is mandatory.\"");
+		}
+
+		try {
+			api.postTask(new APITask(null, "something", -1));
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a positive integer for size is mandatory.\"");
+		}
+	}
+
+
+	@Test
 	void putTaskReturnsResponseFromServiceAfterCallingUpdate() {
 		String taskTitle = "changed";
+		Integer taskSize = 4;
 		long existingTaskId = 55L;
 
-		Task inputTask = new Task(existingTaskId, taskTitle);
-		Task savedTask = new Task(existingTaskId, taskTitle);
+		Task inputTask = new Task(existingTaskId, taskTitle, taskSize);
+		Task savedTask = new Task(existingTaskId, taskTitle, taskSize);
 		Mockito.when(taskService.updateTask(inputTask)).thenReturn(savedTask);
 
-		APITask response = api.putTask(55L, new APITask(existingTaskId, taskTitle));
+		APITask response = api.putTask(55L, new APITask(existingTaskId, taskTitle, taskSize));
 
 		assertThat(response.getTitle()).isEqualTo(taskTitle);
+		assertThat(response.getSize()).isEqualTo(taskSize);
 		assertThat(response.getId()).isEqualTo(existingTaskId);
 	}
 
 	@Test
 	void putTaskDoesNotAcceptATaskWithoutId() {
-		APITask task = new APITask(null,"something");
+		APITask task = new APITask(null,"something", 4);
 
 		try {
 			api.putTask(1L, task);
@@ -81,9 +129,49 @@ public class TaskAPITest {
 		}
 	}
 
+
+	@Test
+	void putTaskDoesNotAcceptATaskWithoutTitle() {
+		APITask task = new APITask(1L,null, 4);
+
+		try {
+			api.putTask(1L, task);
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When PUTing a Task, make sure to provide a title in the request body.  An empty string is valid.\"");
+		}
+	}
+
+
+	@Test
+	void putTaskDoesNotAcceptATaskWithoutAPositiveSize() {
+
+		try {
+			api.putTask(1L, new APITask(1L,"", null));
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When PUTing a Task, make sure to provide a positive integer for size.\"");
+		}
+
+		try {
+			api.putTask(1L, new APITask(1L,"", 0));
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When PUTing a Task, make sure to provide a positive integer for size.\"");
+		}
+
+		try {
+			api.putTask(1L, new APITask(1L,"", -1));
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When PUTing a Task, make sure to provide a positive integer for size.\"");
+		}
+	}
+
+
 	@Test
 	void putTaskThrows404StyleExceptionIfDoesNotExist() {
-		APITask task = new APITask(1L,"something");
+		APITask task = new APITask(1L,"something", 4);
 		Mockito.when(taskService.updateTask(task.toDomainObject())).thenThrow(new TaskService.TaskNotFoundException("st"));
 
 		try {
@@ -97,7 +185,7 @@ public class TaskAPITest {
 
 	@Test
 	void putTaskThrows500StyleExceptionIfServiceThrowsUnexpectedException() {
-		APITask task = new APITask(1L,"something");
+		APITask task = new APITask(1L,"something", 4);
 		Mockito.when(taskService.updateTask(task.toDomainObject())).thenThrow(new RuntimeException("st"));
 
 		try {
@@ -111,7 +199,7 @@ public class TaskAPITest {
 
 	@Test
 	void putTaskDoesNotAcceptMismatchedIdsInUrlAndBody() {
-		APITask task = new APITask(5L,"something");
+		APITask task = new APITask(5L,"something", 4);
 
 		try {
 			api.putTask(7L, task);
@@ -123,16 +211,16 @@ public class TaskAPITest {
 
 	@Test
 	void getTasksRetrievesAllTasksFromServiceAndIncludesIds() {
-		Task task1 = new Task(5L, "st");
-		Task task2 = new Task(6L, "st else");
+		Task task1 = new Task(5L, "st", 4);
+		Task task2 = new Task(6L, "st else", 7);
 		List<Task> taskList = Arrays.asList(task1, task2);
 		Mockito.when(taskService.getAllTasks()).thenReturn(taskList);
 
 		List<APITask> apiTasks = api.getTasks();
 
 		assertThat(apiTasks.size()).isEqualTo(2);
-		assertThat(apiTasks.get(0)).isEqualTo(new APITask(5L, "st"));
-		assertThat(apiTasks.get(1)).isEqualTo(new APITask(6L, "st else"));
+		assertThat(apiTasks.get(0)).isEqualTo(new APITask(5L, "st", 4));
+		assertThat(apiTasks.get(1)).isEqualTo(new APITask(6L, "st else", 7));
 	}
 
 	@Test
@@ -148,12 +236,13 @@ public class TaskAPITest {
 
 	@Test
 	void deleteTaskCallsServiceDeleteAndReturnsDeletedTask() {
-		Mockito.when(taskService.deleteTask(55L)).thenReturn(new Task(55L, "st"));
+		Mockito.when(taskService.deleteTask(55L)).thenReturn(new Task(55L, "st", 7));
 
 		APITask deletedTask = api.deleteTask(55L);
 
 		assertThat(deletedTask.getId()).isEqualTo(55L);
 		assertThat(deletedTask.getTitle()).isEqualTo("st");
+		assertThat(deletedTask.getSize()).isEqualTo(7);
 	}
 
 	@Test

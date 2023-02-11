@@ -44,6 +44,14 @@ public class TaskAPI {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"When POSTing a new Task, do not provide an id.  Maybe you intended to use a PUT.");
 		}
+		if (task.getSize() == null || task.getSize() < 1) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When POSTing a new Task, a positive integer for size is mandatory.");
+		}
+		if (task.getTitle() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When POSTing a new Task, a title is mandatory.  An empty string is valid.");
+		}
 	}
 
 
@@ -73,7 +81,16 @@ public class TaskAPI {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"When PUTing a Task, the url id and request body id must match.");
 		}
+		if (task.getTitle() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When PUTing a Task, make sure to provide a title in the request body.  An empty string is valid.");
+		}
+		if (task.getSize() == null || task.getSize() < 1) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When PUTing a Task, make sure to provide a positive integer for size.");
+		}
 	}
+
 
 	@DeleteMapping(value = "/task/{taskId}")
 	public APITask deleteTask(@PathVariable Long taskId) {

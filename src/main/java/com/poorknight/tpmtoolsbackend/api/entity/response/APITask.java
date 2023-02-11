@@ -14,12 +14,13 @@ public class APITask {
 
 	private final Long id;
 	private final String title;
+	private final Integer size;
 
 	public static APITask fromDomainObject(Task task) {
-		return new APITask(task.getId(), task.getTitle());
+		return new APITask(task.getId(), task.getTitle(), task.getSize());
 	}
 
 	public Task toDomainObject() {
-		return new Task(this.id, this.title);
+		return new Task(this.id, this.title, this.size);
 	}
 }
