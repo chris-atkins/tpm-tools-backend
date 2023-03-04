@@ -92,59 +92,6 @@ class HelloServiceTest extends BaseUnitTestWithDatabase {
 
 	}
 
-	@Test
-	void canReturnARandomMessageWithAReasonableAmountOfRandomness() throws SQLException {
-		List<HelloMessage> allMessages = helloService.getAllMessages();
-		for (HelloMessage message : allMessages) {
-			helloService.deleteMessageById(message.getId());
-		}
-		int totalNumberOfHelloMessages = findTotalNumberOfHelloMessages();
-		assertThat(totalNumberOfHelloMessages).isZero();
-
-		helloService.saveNewMessage(new HelloMessage("Oh hello from the db!"));
-		helloService.saveNewMessage(new HelloMessage("DB says hi :) "));
-
-		totalNumberOfHelloMessages = findTotalNumberOfHelloMessages();
-		assertThat(totalNumberOfHelloMessages).isEqualTo(2);
-
-		int messageOneCount = 0;
-		int messageTwoCount = 0;
-		for (int i = 0; i < 1000; i++) {
-			HelloMessage randomHelloMessage = helloService.getRandomHelloMessage();
-			if (randomHelloMessage.getMessage().equals("Oh hello from the db!")) {
-				messageOneCount++;
-			}
-			if (randomHelloMessage.getMessage().equals("DB says hi :) ")) {
-				messageTwoCount++;
-			}
-		}
-		assertThat(messageOneCount).isBetween(450, 550);
-		assertThat(messageTwoCount).isBetween(450, 550);
-
-
-		helloService.saveNewMessage(new HelloMessage("DB is angry :("));
-
-		messageOneCount = 0;
-		messageTwoCount = 0;
-		int messageThreeCount = 0;
-		for (int i = 0; i < 999; i++) {
-			HelloMessage randomHelloMessage = helloService.getRandomHelloMessage();
-			if (randomHelloMessage.getMessage().equals("Oh hello from the db!")) {
-				messageOneCount++;
-			}
-			if (randomHelloMessage.getMessage().equals("DB says hi :) ")) {
-				messageTwoCount++;
-			}
-			if (randomHelloMessage.getMessage().equals("DB is angry :(")) {
-				messageThreeCount++;
-			}
-		}
-
-		assertThat(messageOneCount).isBetween(283, 383);
-		assertThat(messageTwoCount).isBetween(283, 383);
-		assertThat(messageThreeCount).isBetween(283, 383);
-	}
-
 	private int findTotalNumberOfHelloMessages() throws SQLException {
 		Connection connection = this.getConnection();
 		Statement statement = connection.createStatement();

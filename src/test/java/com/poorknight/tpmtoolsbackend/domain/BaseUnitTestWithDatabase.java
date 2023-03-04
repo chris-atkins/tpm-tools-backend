@@ -12,13 +12,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.support.TestPropertySourceUtils;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Properties;
+import java.sql.*;
 
 @DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = {Repository.class, Service.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -37,5 +32,20 @@ public class BaseUnitTestWithDatabase extends BaseTestWithDatabase {
 					"spring.datasource.password=" + db.getPassword()
 			);
 		}
+	}
+
+	protected int findTotalNumberOfTasks() throws Exception {
+		Connection connection = this.getConnection();
+		Statement statement = connection.createStatement();
+		ResultSet resultSet = statement.executeQuery("SELECT * FROM TASK");
+
+		int count = 0;
+		while (resultSet.next()) {
+			count++;
+		}
+		resultSet.close();
+		statement.close();
+		connection.close();
+		return count;
 	}
 }

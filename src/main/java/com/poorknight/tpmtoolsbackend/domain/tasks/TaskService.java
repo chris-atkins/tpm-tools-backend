@@ -25,6 +25,9 @@ public class TaskService {
 		if (task.getId() != null) {
 			throw new RuntimeException("Cannot specify an ID on a new Task!  Try the updateTask method instead :)");
 		}
+		if (task.getRowId() == null) {
+			throw new RuntimeException("Must specify a rowId for a new Task.  No action taken.");
+		}
 		if (task.getTitle() == null) {
 			throw new RuntimeException("Must specify a title for a new Task. An empty string is ok, null is not.  No action taken.");
 		}
@@ -42,6 +45,9 @@ public class TaskService {
 		if (taskToUpdate.getId() == null) {
 			throw new RuntimeException("Must specify an ID to update a Task - that is how we know what Task to update! Try the saveNewTask method instead :)");
 		}
+		if (taskToUpdate.getRowId() == null) {
+			throw new RuntimeException("Must specify a rowId when updating a Task.");
+		}
 		if (taskToUpdate.getTitle() == null) {
 			throw new RuntimeException("Must specify a title while updating a Task. A full task must be given, including fields that are not changing.");
 		}
@@ -49,14 +55,14 @@ public class TaskService {
 			throw new RuntimeException("Must specify a size while updating a Task. A full task must be given, including fields that are not changing.");
 		}
 
-		Optional<Task> task = this.getTask(taskToUpdate.getId());
+		Optional<Task> task = repository.findById(taskToUpdate.getId());
 		if (task.isEmpty()) {
 			throw new TaskNotFoundException("Cannot update task with id " + taskToUpdate.getId() + ". It does not exist.");
 		}
 	}
 
-	public List<Task> getAllTasks() {
-		Iterable<Task> allTasks = repository.findAll();
+	public List<Task> getAllTasksForRow(Long rowId) {
+		Iterable<Task> allTasks = repository.findAllTasksForRow(rowId);
 
 		List<Task> taskList = new ArrayList<>();
 		for (Task task : allTasks) {
@@ -66,7 +72,7 @@ public class TaskService {
 	}
 
 	public Task deleteTask(Long taskId) {
-		Optional<Task> task = this.getTask(taskId);
+		Optional<Task> task = repository.findById(taskId);
 		if (task.isEmpty()) {
 			throw new TaskNotFoundException("Cannot delete task with id " + taskId + ". It does not exist.");
 		}
@@ -74,8 +80,12 @@ public class TaskService {
 		return task.get();
 	}
 
-	private Optional<Task> getTask(Long taskId) {
-		return repository.findById(taskId);
+	public Task findTaskWithId(Long taskId) {
+		Optional<Task> task = repository.findById(taskId);
+		if (task.isEmpty()) {
+			throw new TaskNotFoundException("Cannot find task with id " + taskId + ".");
+		}
+		return task.get();
 	}
 
 	public static class TaskNotFoundException extends RuntimeException {

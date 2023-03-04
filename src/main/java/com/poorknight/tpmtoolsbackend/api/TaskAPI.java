@@ -18,9 +18,9 @@ public class TaskAPI {
 	@Autowired
 	private TaskService taskService;
 
-	@GetMapping(value = "/task")
-	public List<APITask> getTasks() {
-		List<Task> allTasks = taskService.getAllTasks();
+	@GetMapping(value = "/rows/{rowId}/tasks")
+	public List<APITask> getTasks(@PathVariable Long rowId) {
+		List<Task> allTasks = taskService.getAllTasksForRow(rowId);
 
 		List<APITask> responseTasks = new ArrayList<>(allTasks.size());
 		for (Task task: allTasks) {
@@ -29,9 +29,9 @@ public class TaskAPI {
 		return responseTasks;
 	}
 
-	@PostMapping(value = "/task", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public APITask postTask(@RequestBody APITask task) {
-		validateTaskToPostThrowingExceptions(task);
+	@PostMapping(value = "/rows/{rowId}/tasks", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public APITask postTask(@PathVariable Long rowId, @RequestBody APITask task) {
+		validateTaskToPostThrowingExceptions(rowId, task);
 
 		Task taskToSave = task.toDomainObject();
 		Task savedTask = taskService.saveNewTask(taskToSave);
@@ -39,10 +39,18 @@ public class TaskAPI {
 
 	}
 
-	private void validateTaskToPostThrowingExceptions(APITask task) {
+	private void validateTaskToPostThrowingExceptions(Long rowId, APITask task) {
 		if (task.getId() != null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"When POSTing a new Task, do not provide an id.  Maybe you intended to use a PUT.");
+		}
+		if (task.getRowId() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When POSTing a new Task, a rowId is mandatory.");
+		}
+		if (!task.getRowId().equals(rowId)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When POSTing a new Task, the rowId in the body must match the one in the url.");
 		}
 		if (task.getSize() == null || task.getSize() < 1) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -55,27 +63,38 @@ public class TaskAPI {
 	}
 
 
-	@PutMapping(value = "/task/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public APITask putTask(@PathVariable long taskId, @RequestBody APITask taskBody) {
+	@PutMapping(value = "/rows/{rowId}/tasks/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public APITask putTask(@PathVariable Long rowId, @PathVariable long taskId, @RequestBody APITask taskBody) {
 		validateTaskToPutThrowingExceptions(taskId, taskBody);
 
 		try {
+			checkTaskIdBelongsToRowIDInURLThrowingException(rowId, taskId);
+
 			Task taskToUpdate = taskBody.toDomainObject();
 			Task updatedTask = taskService.updateTask(taskToUpdate);
 			return APITask.fromDomainObject(updatedTask);
 
 		} catch (TaskService.TaskNotFoundException e) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cannot PUT the task.  No task exists with the passed id: " + taskId);
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+					"Cannot PUT the task.  No task exists with the passed id: " + taskId);
+
+		} catch (ResponseStatusException e) {
+			throw e;
 
 		} catch (RuntimeException e) {
-			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error encountered while attempting to update task with id " + taskId + ".  Please try again, until a 200 message is returned.");
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+					"Unexpected error encountered while attempting to update task with id " + taskId + ".  Please try again, until a 200 message is returned.");
 		}
 	}
 
-	private void validateTaskToPutThrowingExceptions(long taskId, APITask task) {
+	private void validateTaskToPutThrowingExceptions(Long taskId, APITask task) {
 		if (task.getId() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"When PUTing a Task, make sure to provide an id in the request body.");
+		}
+		if (task.getRowId() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"When PUTing a Task, make sure to provide a rowId.");
 		}
 		if (task.getId() != taskId) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -92,17 +111,32 @@ public class TaskAPI {
 	}
 
 
-	@DeleteMapping(value = "/task/{taskId}")
-	public APITask deleteTask(@PathVariable Long taskId) {
+	@DeleteMapping(value = "/rows/{rowId}/tasks/{taskId}")
+	public APITask deleteTask(@PathVariable Long rowId, @PathVariable Long taskId) {
 		try {
+			checkTaskIdBelongsToRowIDInURLThrowingException(rowId, taskId);
+
 			Task deletedTask = taskService.deleteTask(taskId);
 			return APITask.fromDomainObject(deletedTask);
 
 		} catch (TaskService.TaskNotFoundException e) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task with id " + taskId + " does not exist.");
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+					"Task with id " + taskId + " does not exist.");
+
+		} catch (ResponseStatusException e) {
+			throw e;
 
 		} catch (RuntimeException e) {
-			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error encountered while attempting to delete task with id " + taskId + ".  Please try again, until a 404 message is returned.");
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+					"Unexpected error encountered while attempting to delete task with id " + taskId + ".  Please try again, until a 404 message is returned.");
+		}
+	}
+
+	private void checkTaskIdBelongsToRowIDInURLThrowingException(Long rowId, Long taskId) {
+		Task task = taskService.findTaskWithId(taskId);
+		if (!task.getRowId().equals(rowId)){
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"In order to perform this operation, the row id of the currently saved task must match the value passed in the url for rowId.");
 		}
 	}
 }

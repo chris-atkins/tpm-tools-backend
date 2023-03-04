@@ -1,4 +1,3 @@
-
 CREATE TABLE TASK (
     ID int NOT NULL AUTO_INCREMENT,
     TITLE varchar(255) NULL,

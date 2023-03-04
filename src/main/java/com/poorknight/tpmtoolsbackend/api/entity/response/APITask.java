@@ -13,14 +13,15 @@ import lombok.ToString;
 public class APITask {
 
 	private final Long id;
+	private final Long rowId;
 	private final String title;
 	private final Integer size;
 
 	public static APITask fromDomainObject(Task task) {
-		return new APITask(task.getId(), task.getTitle(), task.getSize());
+		return new APITask(task.getId(), task.getRowId(), task.getTitle(), task.getSize());
 	}
 
 	public Task toDomainObject() {
-		return new Task(this.id, this.title, this.size);
+		return new Task(this.id, this.rowId, this.title, this.size);
 	}
 }
