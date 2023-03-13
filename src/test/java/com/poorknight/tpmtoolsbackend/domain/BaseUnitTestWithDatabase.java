@@ -34,18 +34,22 @@ public class BaseUnitTestWithDatabase extends BaseTestWithDatabase {
 		}
 	}
 
-	protected int findTotalNumberOfTasks() throws Exception {
-		Connection connection = this.getConnection();
-		Statement statement = connection.createStatement();
-		ResultSet resultSet = statement.executeQuery("SELECT * FROM TASK");
+	protected int findTotalNumberOfTasks() {
+		try {
+			Connection connection = this.getConnection();
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery("SELECT * FROM TASK");
 
-		int count = 0;
-		while (resultSet.next()) {
-			count++;
+			int count = 0;
+			while (resultSet.next()) {
+				count++;
+			}
+			resultSet.close();
+			statement.close();
+			connection.close();
+			return count;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		resultSet.close();
-		statement.close();
-		connection.close();
-		return count;
 	}
 }

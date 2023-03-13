@@ -166,8 +166,12 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 			rowService.updateRow(row);
 			fail("Expecting exception");
-		} catch (RuntimeException e) {
+
+		} catch (RowService.RowNotFoundException e) {
 			assertThat(e.getMessage()).contains("The rowId passed does not exist!  It is impossible to perform an update on a row that does not exist.");
+
+		} catch (RuntimeException e) {
+			fail("expecting a RowNotFoundException - instead got " + e.getClass().getCanonicalName());
 		}
 	}
 
@@ -184,19 +188,81 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		}
 	}
 
-	private int findCountOfRows() throws SQLException {
-		Connection connection = this.getConnection();
-		Statement statement = connection.createStatement();
-		ResultSet resultSet = statement.executeQuery("SELECT * FROM P1_ROW");
+	@Test
+	void canDeleteAnEmptyRowById() {
+		Long rowId = createRowWithSQLOnly("new row");
+		int rowCount = findCountOfRows();
+		assertThat(rowCount).isEqualTo(1);
 
-		int count = 0;
-		while (resultSet.next()) {
-			count++;
+		rowService.deleteEmptyRowById(rowId);
+
+		int rowCountAfterDelete = findCountOfRows();
+		assertThat(rowCountAfterDelete).isEqualTo(0);
+	}
+
+	@Test
+	void cannotDeleteARowThatHasTasksAssociatedWithIt() {
+		Long rowId = createRowWithSQLOnly("new row");
+		createTaskWithSQLOnly(rowId, "some task");
+		assertThat(findCountOfRows()).isEqualTo(1);
+		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
+
+		try {
+			rowService.deleteEmptyRowById(rowId);
+			fail("expecting exception");
+
+		} catch (RuntimeException e) {
+
+			assertThat(findCountOfRows()).isEqualTo(1);
+			assertThat(findTotalNumberOfTasks()).isEqualTo(1);
+			assertThat(e.getMessage()).isEqualTo("Cannot delete a row that has tasks that belong to it.  Please delete the tasks or move them to another row before deleting this row.");
 		}
-		resultSet.close();
-		statement.close();
-		connection.close();
-		return count;
+	}
+
+	@Test
+	void deleteReturnsTheObjectThatWasDeleted() {
+		Long rowId = createRowWithSQLOnly("new row");
+		int rowCount = findCountOfRows();
+		assertThat(rowCount).isEqualTo(1);
+
+		Row deletedRow = rowService.deleteEmptyRowById(rowId);
+
+		assertThat(deletedRow.getId()).isEqualTo(rowId);
+		assertThat(deletedRow.getTitle()).isEqualTo("new row");
+		assertThat(deletedRow.getTaskList().size()).isEqualTo(0);
+	}
+
+	@Test
+	void deleteErrorsIfTheRowIDIsNotValid() {
+		try {
+			rowService.deleteEmptyRowById(67L);
+			fail("expecting exception");
+
+		} catch (RowService.RowNotFoundException e) {
+			assertThat(e.getMessage()).isEqualTo("The rowId passed does not point to a valid row.  No changes were made.");
+
+		} catch (Exception e) {
+			fail("expecting a RowNotFoundException - instead got " + e.getClass().getCanonicalName());
+		}
+	}
+
+	private int findCountOfRows() {
+		try {
+			Connection connection = this.getConnection();
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = statement.executeQuery("SELECT * FROM P1_ROW");
+
+			int count = 0;
+			while (resultSet.next()) {
+				count++;
+			}
+			resultSet.close();
+			statement.close();
+			connection.close();
+			return count;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private boolean canFindRowWithTitle(String titleToSearchFor) throws Exception {
