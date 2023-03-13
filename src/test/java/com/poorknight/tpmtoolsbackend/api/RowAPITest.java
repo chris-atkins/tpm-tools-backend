@@ -142,13 +142,74 @@ public class RowAPITest {
 	}
 
 	@Test
-	void patchRowDoesNotNullTitle() {
+	void patchRowDoesNotAllowNullTitle() {
 		try {
 			api.patchRow(1L, new APIRowPatch(null));
 			fail("Expecting exception");
 		} catch (ResponseStatusException e) {
 			assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
 			assertThat(e.getMessage()).contains("Null is not valid for a row's title.");
+		}
+	}
+
+	@Test
+	void patchThrows404StyleExceptionOnNotFoundRow() {
+		Mockito.when(rowService.updateRow(Mockito.any())).thenThrow(new RowService.RowNotFoundException("no!"));
+
+		try {
+			api.patchRow(1L, new APIRowPatch("title"));
+			fail("Expecting exception");
+
+		} catch (ResponseStatusException e) {
+			assertThat(e.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+			assertThat(e.getMessage()).contains("Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
+
+		} catch (Exception e) {
+			fail("Expecting ResponseStatusException, instead got " + e.getClass().getCanonicalName());
+		}
+	}
+
+	@Test
+	void deleteRowCallsServiceAndReturnsTheDeletedRow() {
+		Mockito.when(rowService.deleteEmptyRowById(55L)).thenReturn(new Row(55L, "Hi i am a title"));
+
+		APIRow deletedRow = api.deleteRow(55L);
+		assertThat(deletedRow.getId()).isEqualTo(55L);
+		assertThat(deletedRow.getTitle()).isEqualTo("Hi i am a title");
+		assertThat(deletedRow.getTasks().size()).isEqualTo(0);
+	}
+
+	@Test
+	void deleteRowReturns404StyleErrorIfServiceRespondsWithNotFoundException() {
+		Mockito.when(rowService.deleteEmptyRowById(55L)).thenThrow(new RowService.RowNotFoundException("NO ROW FOR YOU"));
+
+		try {
+			api.deleteRow(55L);
+			fail("Expecting exception");
+
+		} catch (ResponseStatusException e) {
+			assertThat(e.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+			assertThat(e.getMessage()).contains("Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
+
+		} catch (Exception e) {
+			fail("Expecting ResponseStatusException, instead got " + e.getClass().getCanonicalName());
+		}
+	}
+
+	@Test
+	void deleteRowReturnsBadRequestStyleErrorIfServiceFailsForTasksExist() {
+		Mockito.when(rowService.deleteEmptyRowById(55L)).thenThrow(new RowService.CannotDeleteNonEmptyRowException("NO ROW FOR YOU"));
+
+		try {
+			api.deleteRow(55L);
+			fail("Expecting exception");
+
+		} catch (ResponseStatusException e) {
+			assertThat(e.getMessage()).contains("Unable to complete operation.  Delete can only be performed on a row that has zero tasks associated with it.  No changes made.");
+			assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+		} catch (Exception e) {
+			fail("Expecting ResponseStatusException, instead got " + e.getClass().getCanonicalName());
 		}
 	}
 }

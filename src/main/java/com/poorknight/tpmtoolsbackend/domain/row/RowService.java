@@ -76,7 +76,7 @@ public class RowService {
 		Row row = maybeRow.get();
 
 		if (!row.getTaskList().isEmpty()) {
-			throw new RuntimeException("Cannot delete a row that has tasks that belong to it.  Please delete the tasks or move them to another row before deleting this row.");
+			throw new CannotDeleteNonEmptyRowException("Cannot delete a row that has tasks that belong to it.  Please delete the tasks or move them to another row before deleting this row.");
 		}
 		return row;
 	}
@@ -85,6 +85,12 @@ public class RowService {
 	public static class RowNotFoundException extends RuntimeException {
 
 		public RowNotFoundException(String message) {
+			super(message);
+		}
+	}
+
+	public static class CannotDeleteNonEmptyRowException extends RuntimeException {
+		public CannotDeleteNonEmptyRowException(String message) {
 			super(message);
 		}
 	}

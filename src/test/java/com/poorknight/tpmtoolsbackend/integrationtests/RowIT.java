@@ -66,7 +66,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 
 
 	@Test
-	void canChangeARowWithAnEmptyTitle() {
+	void canSaveARowWithAnEmptyTitle() {
 		ResponseEntity<String> response = postNewRow("{\"title\": \"\"}");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -218,6 +218,29 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				]
 				""", rowId1, rowId2, taskId, rowId2);
 		JSONAssert.assertEquals(newExpectedResults, updatedGetResponse.getBody(), JSONCompareMode.STRICT);
+	}
+
+	@Test
+	void canDeleteARowAndGetDeletedRowInTheResponse() throws Exception {
+		ResponseEntity<String> postResponse = postNewRow("{\"title\": \"original title\"}");
+		Long rowId = getRowIdFromPostResponse(postResponse);
+
+		ResponseEntity<String> deleteResponse = makeDELETERequest("/rows/" + rowId);
+
+		assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		String expectedResponse = String.format("""
+				{
+					"id": %d,
+					"title": "original title",
+					"tasks": []
+				}
+				""", rowId);
+		JSONAssert.assertEquals(expectedResponse, deleteResponse.getBody(), JSONCompareMode.STRICT);
+
+		// row has been deleted - and does not show up in get request
+		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		JSONAssert.assertEquals("[]", getResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
 	private ResponseEntity<String> postNewRow(String taskJsonString) {

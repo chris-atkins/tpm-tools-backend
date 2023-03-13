@@ -211,11 +211,14 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 			rowService.deleteEmptyRowById(rowId);
 			fail("expecting exception");
 
-		} catch (RuntimeException e) {
+		} catch (RowService.CannotDeleteNonEmptyRowException e) {
 
 			assertThat(findCountOfRows()).isEqualTo(1);
 			assertThat(findTotalNumberOfTasks()).isEqualTo(1);
 			assertThat(e.getMessage()).isEqualTo("Cannot delete a row that has tasks that belong to it.  Please delete the tasks or move them to another row before deleting this row.");
+
+		} catch (Exception e) {
+			fail("expecting CannotDeleteNonEmptyRowException, instead got " + e.getClass().getCanonicalName());
 		}
 	}
 

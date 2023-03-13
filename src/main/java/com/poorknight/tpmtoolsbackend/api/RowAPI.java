@@ -47,12 +47,30 @@ public class RowAPI {
 	public APIRow patchRow(@PathVariable Long rowId, @RequestBody APIRowPatch rowPatch) {
 		validatePatchInputThrowingException(rowPatch);
 		Row row = new Row(rowId, rowPatch.getTitle());
-		return APIRow.fromDomainObject(rowService.updateRow(row));
+		try {
+			Row updatedRow = rowService.updateRow(row);
+			return APIRow.fromDomainObject(updatedRow);
+
+		} catch(RowService.RowNotFoundException e) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
+		}
 	}
 
 	private void validatePatchInputThrowingException(APIRowPatch rowPatch) {
 		if (rowPatch.getTitle() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Null is not valid for a row's title.");
+		}
+	}
+
+	@DeleteMapping(value="/rows/{rowId}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public APIRow deleteRow(@PathVariable Long rowId) {
+		try {
+			return APIRow.fromDomainObject(rowService.deleteEmptyRowById(rowId));
+
+		} catch (RowService.RowNotFoundException e) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
+		} catch (RowService.CannotDeleteNonEmptyRowException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to complete operation.  Delete can only be performed on a row that has zero tasks associated with it.  No changes made.");
 		}
 	}
 }
