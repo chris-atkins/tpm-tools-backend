@@ -34,6 +34,9 @@ public class TaskService {
 		if (task.getSize() == null) {
 			throw new RuntimeException("Must specify a size for a new Task.  No action taken.");
 		}
+		if (task.getPosition() == null) {
+			throw new RuntimeException("Must specify a position for a new Task.  No action taken.");
+		}
 	}
 
 	public Task updateTask(Task taskToUpdate) {
@@ -53,6 +56,9 @@ public class TaskService {
 		}
 		if (taskToUpdate.getSize() == null) {
 			throw new RuntimeException("Must specify a size while updating a Task. A full task must be given, including fields that are not changing.");
+		}
+		if (taskToUpdate.getPosition() == null) {
+			throw new RuntimeException("Must specify a position while updating a Task. A full task must be given, including fields that are not changing.");
 		}
 
 		Optional<Task> task = repository.findById(taskToUpdate.getId());

@@ -28,15 +28,15 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	}
 
 	@Test
-	public void testTaskResponseHasIdAndRowIdAndTitleAndSizeOnSuccessfulPOST() throws Exception {
-		String body = "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5}";
+	public void testTaskResponseHasIdAndRowIdAndTitleAndSizeAndPositionOnSuccessfulPOST() throws Exception {
+		String body = "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}";
 		ResponseEntity<String> response = makePOSTRequest(body, "/rows/" + rowId1 + "/tasks");
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		JsonNode responseNode = getRootJsonNode(response);
 		List<Map.Entry<String, JsonNode>> fieldList = getAllFieldsForNode(responseNode);
-		assertThat(fieldList.size()).isEqualTo(4);
+		assertThat(fieldList.size()).isEqualTo(5);
 
 		assertThat(fieldList.get(0).getKey()).isEqualTo("id");
 		assertThat(fieldList.get(0).getValue().asLong()).isGreaterThan(0);
@@ -53,11 +53,15 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		assertThat(fieldList.get(3).getKey()).isEqualTo("size");
 		assertThat(fieldList.get(3).getValue().asInt()).isEqualTo(5);
 		assertThat(fieldList.get(3).getValue().fields().hasNext()).isFalse();
+
+		assertThat(fieldList.get(4).getKey()).isEqualTo("position");
+		assertThat(fieldList.get(4).getValue().asInt()).isEqualTo(3);
+		assertThat(fieldList.get(4).getValue().fields().hasNext()).isFalse();
 	}
 
 	@Test
 	public void errorsIfAnIdIsProvidedWhenPOSTingTask() throws Exception {
-		String body = "{\"id\": 55, \"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5}";
+		String body = "{\"id\": 55, \"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}";
 
 		ResponseEntity<String> response = makePOSTRequest(body, "/rows/" + rowId1 + "/tasks");
 
@@ -67,7 +71,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void postTaskDoesNotAcceptExtraFields() throws Exception {
-		String body = "{\"someExtraField\": \"hi\", \"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5}";
+		String body = "{\"someExtraField\": \"hi\", \"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}";
 
 		ResponseEntity<String> response =makePOSTRequest(body, "/rows/" + rowId1 + "/tasks");
 
@@ -76,18 +80,19 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	}
 
 	@Test
-	void putTaskCanChangeRowIdAndTitleAndSizeOnAnExistingTask() throws Exception {
-		postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5}");
+	void putTaskCanChangeRowIdAndTitleAndSizeAndPositionOnAnExistingTask() throws Exception {
+		postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}");
 
 		ResponseEntity<String> getResponse = makeGETRequest("/rows/" + rowId1 + "/tasks");
 		List<JsonNode> taskList = buildTaskListFromGetResponse(getResponse);
 		assertThat(taskList.size()).isEqualTo(1);
 		assertThat(taskList.get(0).get("title").asText()).isEqualTo("the best title");
 		assertThat(taskList.get(0).get("size").asInt()).isEqualTo(5);
+		assertThat(taskList.get(0).get("position").asInt()).isEqualTo(3);
 
 		Long taskId = taskList.get(0).get("id").asLong();
 
-		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"rowId\": " + rowId2 + ", \"title\": \"a fine title\", \"size\": 8}";
+		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"rowId\": " + rowId2 + ", \"title\": \"a fine title\", \"size\": 8, \"position\": 5}";
 		ResponseEntity<String> putResponse = makePUTRequest(jsonTaskToUpdate, "/rows/" + rowId1 + "/tasks/" + taskId);
 
 		String expectedResult = String.format("""
@@ -95,7 +100,8 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 					"id": %d,
 					"rowId": %d,
 					"title": "a fine title",
-					"size": 8 
+					"size": 8,
+					"position": 5 
 				}
 				""", taskId, rowId2);
 		JSONAssert.assertEquals(expectedResult, putResponse.getBody(), JSONCompareMode.STRICT);
@@ -106,11 +112,12 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		assertThat(taskList.get(0).get("rowId").asLong()).isEqualTo(rowId2);
 		assertThat(taskList.get(0).get("title").asText()).isEqualTo("a fine title");
 		assertThat(taskList.get(0).get("size").asInt()).isEqualTo(8);
+		assertThat(taskList.get(0).get("position").asInt()).isEqualTo(5);
 	}
 
 	@Test
 	public void putTaskDoesNotAcceptExtraFields() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5}");
+		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
@@ -125,7 +132,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void putTaskDoesNotAcceptBodyWithNoId() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5}");
+		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
@@ -140,7 +147,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void putTaskDoesNotAcceptBodyWithMismatchedIdComparedToUrl() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5}");
+		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
@@ -155,11 +162,11 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void putTaskAcceptsBodyWithNoChanges() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5}");
+		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
-				{"id": %d, "rowId": %d, "title": "first title", "size": 5}
+				{"id": %d, "rowId": %d, "title": "first title", "size": 5, "position": 3}
 				""", taskId, rowId1);
 
 		ResponseEntity<String> response = makePUTRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
@@ -168,7 +175,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void deleteTaskRemovesATask() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"a title\", \"size\": 5}");
+		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"a title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		assertThat(findNumberOfTasksReturnedFromGetAll()).isEqualTo(1);
@@ -200,9 +207,9 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void getAllTasksReturnsAListOfTasksThatHaveBeenSavedToARow() throws Exception {
-		postNewTask(rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5}");
-		postNewTask(rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the second best title\", \"size\": 6}");
-		postNewTask(rowId2,"{\"rowId\": " + rowId2 + ", \"title\": \"the worst title\", \"size\": 7}");
+		postNewTask(rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}");
+		postNewTask(rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the second best title\", \"size\": 6, \"position\": 4}");
+		postNewTask(rowId2,"{\"rowId\": " + rowId2 + ", \"title\": \"the worst title\", \"size\": 7, \"position\": 5}");
 
 		ResponseEntity<String> response = makeGETRequest("/rows/" + rowId1 + "/tasks");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -215,14 +222,14 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 		assertThat(taskResponseList.size()).isEqualTo(2);
 
-		assertThatNodeIsWellFormedTaskWithFields(taskResponseList.get(0), rowId1,"the best title", 5);
-		assertThatNodeIsWellFormedTaskWithFields(taskResponseList.get(1), rowId1,"the second best title", 6);
+		assertThatNodeIsWellFormedTaskWithFields(taskResponseList.get(0), rowId1,"the best title", 5, 3);
+		assertThatNodeIsWellFormedTaskWithFields(taskResponseList.get(1), rowId1,"the second best title", 6, 4);
 	}
 
-	private void assertThatNodeIsWellFormedTaskWithFields(JsonNode nodeToCheck, Long rowId, String title, int size) {
+	private void assertThatNodeIsWellFormedTaskWithFields(JsonNode nodeToCheck, Long rowId, String title, int size, int position) {
 		List<Map.Entry<String, JsonNode>> fieldList = getAllFieldsForNode(nodeToCheck);
 
-		assertThat(fieldList.size()).isEqualTo(4);
+		assertThat(fieldList.size()).isEqualTo(5);
 
 		assertThat(fieldList.get(0).getKey()).isEqualTo("id");
 		assertThat(fieldList.get(0).getValue().asLong()).isGreaterThan(0);
@@ -239,5 +246,9 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		assertThat(fieldList.get(3).getKey()).isEqualTo("size");
 		assertThat(fieldList.get(3).getValue().asInt()).isEqualTo(size);
 		assertThat(fieldList.get(3).getValue().fields().hasNext()).isFalse();
+
+		assertThat(fieldList.get(4).getKey()).isEqualTo("position");
+		assertThat(fieldList.get(4).getValue().asInt()).isEqualTo(position);
+		assertThat(fieldList.get(4).getValue().fields().hasNext()).isFalse();
 	}
 }

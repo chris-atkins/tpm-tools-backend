@@ -33,8 +33,8 @@ public class RowAPITest {
 
 	@Test
 	void getAllRowsReturnsResponseBasedOnServiceResults() {
-		Task task1 = new Task(1L, 5L, "hi", 7);
-		Task task2 = new Task(2L, 5L, "oh", 8);
+		Task task1 = new Task(1L, 5L, "hi", 7, 4);
+		Task task2 = new Task(2L, 5L, "oh", 8, 5);
 		Row row1 = new Row(5L, "the real title", Arrays.asList(task1, task2));
 
 		Row row2 = new Row(6L, "an imaginary title", new ArrayList<>());
@@ -56,12 +56,14 @@ public class RowAPITest {
 		assertThat(firstTask.getRowId()).isEqualTo(5L);
 		assertThat(firstTask.getTitle()).isEqualTo("hi");
 		assertThat(firstTask.getSize()).isEqualTo(7);
+		assertThat(firstTask.getPosition()).isEqualTo(4);
 
 		APITask secondTask = first.getTasks().get(1);
 		assertThat(secondTask.getId()).isEqualTo(2L);
 		assertThat(secondTask.getRowId()).isEqualTo(5L);
 		assertThat(secondTask.getTitle()).isEqualTo("oh");
 		assertThat(secondTask.getSize()).isEqualTo(8);
+		assertThat(secondTask.getPosition()).isEqualTo(5);
 
 		assertThat(second.getId()).isEqualTo(6L);
 		assertThat(second.getTitle()).isEqualTo("an imaginary title");
@@ -86,7 +88,7 @@ public class RowAPITest {
 	@Test
 	void postNewRowDoesNotAcceptTasksInTheRow() {
 		try {
-			api.postNewRow(new APIRow(null, "ohai", Arrays.asList(new APITask(1L, 2L, "hi", 3))));
+			api.postNewRow(new APIRow(null, "ohai", Arrays.asList(new APITask(1L, 2L, "hi", 3, 4))));
 			fail("Expecting exception");
 		} catch (ResponseStatusException e) {
 			assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -128,7 +130,7 @@ public class RowAPITest {
 	@Test
 	void patchRowReturnsResponseBasedOnServiceResultsIncludingTasks() {
 		Row expectedInput = new Row(5L, "st", new ArrayList<>());
-		Row responseFromService = new Row(6L, "ste", Arrays.asList(new Task(1L, 2L, "s", 4)));
+		Row responseFromService = new Row(6L, "ste", Arrays.asList(new Task(1L, 2L, "s", 4, 5)));
 
 		Mockito.when(rowService.updateRow(expectedInput)).thenReturn(responseFromService);
 
@@ -138,7 +140,7 @@ public class RowAPITest {
 		assertThat(response.getId()).isEqualTo(6L);
 		assertThat(response.getTitle()).isEqualTo("ste");
 		assertThat(response.getTasks().size()).isEqualTo(1);
-		assertThat(response.getTasks().get(0)).isEqualTo(new APITask(1L, 2L, "s", 4));
+		assertThat(response.getTasks().get(0)).isEqualTo(new APITask(1L, 2L, "s", 4, 5));
 	}
 
 	@Test

@@ -1,7 +1,6 @@
 package com.poorknight.tpmtoolsbackend.integrationtests;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -127,7 +126,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		ResponseEntity<String> rowResponse = postNewRow("{\"title\": \"something awesome\"}");
 		Long rowId = getRowIdFromPostResponse(rowResponse);
 
-		ResponseEntity<String> taskResponse = postNewTask(rowId, "{\"rowId\": " + rowId + ", \"title\": \"a task!\", \"size\": 5}");
+		ResponseEntity<String> taskResponse = postNewTask(rowId, "{\"rowId\": " + rowId + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(taskResponse);
 
 		ResponseEntity<String> getResponse = makeGETRequest("/rows");
@@ -143,7 +142,8 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 								"id": %d,
 								"rowId": %d,
 								"title": "a task!",
-								"size": 5
+								"size": 5,
+								"position": 3
 							}
 						]
 					}
@@ -159,7 +159,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		Long rowId1 = getRowIdFromPostResponse(rowResponse1);
 		Long rowId2 = getRowIdFromPostResponse(rowResponse2);
 
-		ResponseEntity<String> taskResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"a task!\", \"size\": 5}");
+		ResponseEntity<String> taskResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(taskResponse);
 
 		ResponseEntity<String> getResponse = makeGETRequest("/rows");
@@ -175,7 +175,8 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 								"id": %d,
 								"rowId": %d,
 								"title": "a task!",
-								"size": 5
+								"size": 5,
+								"position": 3
 							}
 						]
 					},
@@ -189,7 +190,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 
 		//Here is the important bit of this test:  especially notice rowId2 -> we're updating the row the task belongs to
-		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"rowId\": " + rowId2 + ", \"title\": \"a task!\", \"size\": 5}";
+		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"rowId\": " + rowId2 + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}";
 		makePUTRequest(jsonTaskToUpdate, "/rows/" + rowId1 + "/tasks/" + taskId);
 
 
@@ -211,7 +212,8 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 								"id": %d,
 								"rowId": %d,
 								"title": "a task!",
-								"size": 5
+								"size": 5,
+								"position": 3
 							}
 						]
 					}

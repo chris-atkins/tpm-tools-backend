@@ -59,7 +59,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	@Test
 	void cannotSaveNewRowWithTaskList() {
 		try {
-			List<Task> taskList = ImmutableList.<Task>builder().add(new Task(5L, "tilte", 1)).build();
+			List<Task> taskList = ImmutableList.<Task>builder().add(new Task(5L, "tilte", 1, 5)).build();
 			Row newRow = new Row(null, "title", taskList);
 			this.rowService.saveNewRow(newRow);
 			fail("Expecting exception");
