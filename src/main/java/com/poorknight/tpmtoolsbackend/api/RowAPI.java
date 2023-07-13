@@ -3,6 +3,7 @@ package com.poorknight.tpmtoolsbackend.api;
 import com.poorknight.tpmtoolsbackend.api.entity.response.APIRow;
 import com.poorknight.tpmtoolsbackend.api.entity.response.APIRowPatch;
 import com.poorknight.tpmtoolsbackend.domain.row.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.RowPatch;
 import com.poorknight.tpmtoolsbackend.domain.row.RowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -46,7 +47,7 @@ public class RowAPI {
 	@PatchMapping(value = "/rows/{rowId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public APIRow patchRow(@PathVariable Long rowId, @RequestBody APIRowPatch rowPatch) {
 		validatePatchInputThrowingException(rowPatch);
-		Row row = new Row(rowId, rowPatch.getTitle());
+		RowPatch row = new RowPatch(rowId, rowPatch.getTitle());
 		try {
 			Row updatedRow = rowService.updateRow(row);
 			return APIRow.fromDomainObject(updatedRow);

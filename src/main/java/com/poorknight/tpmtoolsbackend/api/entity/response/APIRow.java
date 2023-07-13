@@ -18,17 +18,18 @@ import java.util.List;
 public class APIRow {
 
 	private final Long id;
+	private final Long projectPlanId;
 	private final String title;
 	private final List<APITask> tasks;
 
 	public static APIRow fromDomainObject(Row row) {
 		List<APITask> taskList = transformToAPITasks(row.getTaskList());
-		return new APIRow(row.getId(), row.getTitle(), taskList);
+		return new APIRow(row.getId(), row.getProjectPlanId(), row.getTitle(), taskList);
 	}
 
 	public Row toDomainObject() {
 		List<Task> taskList = transformToDomainTasks();
-		return new Row(this.id, this.title, taskList);
+		return new Row(this.id, this.projectPlanId, this.title, taskList);
 	}
 
 	private static List<APITask> transformToAPITasks(List<Task> taskList) {

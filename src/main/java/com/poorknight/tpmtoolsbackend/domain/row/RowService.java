@@ -43,20 +43,22 @@ public class RowService {
 		return results;
 	}
 
-	public Row updateRow(Row rowToUpdate) {
-		validateRowToUpdateThrowingExceptions(rowToUpdate);
-		return rowRepository.save(rowToUpdate);
+	public Row updateRow(RowPatch rowToPatch) {
+		validateRowToUpdateThrowingExceptions(rowToPatch);
+		Optional<Row> existingRow = rowRepository.findById(rowToPatch.getId());
+
+		if (existingRow.isEmpty()) {
+			throw new RowNotFoundException("The rowId passed does not exist!  It is impossible to perform an update on a row that does not exist.");
+		}
+		Row updatedRow = existingRow.get();
+		updatedRow.setTitle(rowToPatch.getTitle());
+
+		return rowRepository.save(updatedRow);
 	}
 
-	private void validateRowToUpdateThrowingExceptions(Row rowToUpdate) {
-		if (rowToUpdate.getTaskList() != null && rowToUpdate.getTaskList().size() > 0) {
-			throw new RuntimeException("New Row cannot be updated with any tasks.  No updates to any tasks will be made through this operation - throwing an exception is to avoid any false impression that tasks might be updated.  Please pass an empty list, and make any task changes by updating the tasks themselves. Thanks!");
-		}
+	private void validateRowToUpdateThrowingExceptions(RowPatch rowToUpdate) {
 		if (rowToUpdate.getId() == null) {
 			throw new RuntimeException("Cannot update a row that does not have an id specified.  Maybe you meant to save a new row, instead of an update?");
-		}
-		if (rowRepository.findById(rowToUpdate.getId()).isEmpty()) {
-			throw new RowNotFoundException("The rowId passed does not exist!  It is impossible to perform an update on a row that does not exist.");
 		}
 	}
 

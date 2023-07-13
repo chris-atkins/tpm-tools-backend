@@ -22,9 +22,10 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	@BeforeEach
 	void setUp() {
 		super.setUp();
-		this.deleteAllTasksAndRows();
-		rowId1 = this.createRowWithSQLOnly("Row 1");
-		rowId2 = this.createRowWithSQLOnly("Row 2");
+		this.deleteAllTasksAndRowsAndProjectPlans();
+		Long projectPlanId = createProjectPlanWithSQLOnly("THE project plan");
+		rowId1 = this.createRowWithSQLOnly(projectPlanId, "Row 1");
+		rowId2 = this.createRowWithSQLOnly(projectPlanId, "Row 2");
 	}
 
 	@Test

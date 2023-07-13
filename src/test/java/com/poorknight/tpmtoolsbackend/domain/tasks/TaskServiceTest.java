@@ -24,9 +24,12 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	@Autowired
 	private RowService rowService;
 
+	private Long projectPlanId;
+
 	@BeforeEach
 	public void setUp() {
-		this.deleteAllTasks();
+		this.deleteAllTasksAndRowsAndProjectPlans();
+		projectPlanId = this.createProjectPlanWithSQLOnly("plan");
 	}
 
 
@@ -34,7 +37,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	void canSaveANewTaskWithARowIdAndTitleAndSizeAndPosition() throws Exception {
 		int originalCount = findTotalNumberOfTasks();
 
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		taskService.saveNewTask(new Task(row.getId(), "Work to do!", 33, 2));
 
 		int newCount = findTotalNumberOfTasks();
@@ -45,7 +48,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void saveTaskReturnsTheSavedTaskWithAnIdAndSameTitleAndSizeAndPosition() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = taskService.saveNewTask(new Task(row.getId(), "Work to do!", 27, 2));
 
 		assertThat(savedTask.getId()).isNotNull();
@@ -74,7 +77,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	void saveNewTaskRequiresASizeToBeSet() throws Exception {
 		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
 
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(row.getId(), "Work to do!", null, 1);
 
 		try {
@@ -90,7 +93,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	void saveNewTaskRequiresAPositionToBeSet() throws Exception {
 		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
 
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(row.getId(), "Work to do!", 1, null);
 
 		try {
@@ -121,7 +124,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	void saveNewTaskRequiresATitleToBeSet() throws Exception {
 		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
 
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(row.getId(), null, 55, 5);
 
 		try {
@@ -135,7 +138,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void saveNewTaskWithEmptyTitleIsOk() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(row.getId(), "", 55, 1);
 
 		Task savedTask = taskService.saveNewTask(task);
@@ -148,11 +151,11 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 		int originalCount = findTotalNumberOfTasks();
 		assertThat(originalCount).isEqualTo(0);
 
-		Row row1 = rowService.saveNewRow(new Row("test row"));
+		Row row1 = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		taskService.saveNewTask(new Task(row1.getId(), "Another task", 1, 1));
 		taskService.saveNewTask(new Task(row1.getId(), "Even more work to do!", 2, 2));
 
-		Row row2 = rowService.saveNewRow(new Row("test row 2"));
+		Row row2 = rowService.saveNewRow(new Row(projectPlanId, "test row 2"));
 		taskService.saveNewTask(new Task(row2.getId(), "Another task again", 1, 1));
 
 		List<Task> allTasks = taskService.getAllTasksForRow(row1.getId());
@@ -182,7 +185,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	void canUpdateAnExistingTask() throws Exception {
 		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
 
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 1));
 
 		List<Task> allTasks = taskService.getAllTasksForRow(row.getId());
@@ -203,7 +206,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void updateTaskMustHaveAnIdPopulated() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(row.getId(), "Work to do!", 1, 2);
 
 		try {
@@ -230,7 +233,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void updateTaskMustHaveASizePopulated() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(1L, row.getId(), "Work to do!", null, 3);
 
 		try {
@@ -244,7 +247,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void updateTaskMustHaveAPositionPopulated() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(1L, row.getId(), "Work to do!", 3, null);
 
 		try {
@@ -258,7 +261,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void updateTaskDoesNotAllowNullTitle() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(1L, row.getId(), null, 4, 34);
 
 		try {
@@ -272,7 +275,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void updatingATaskToEmptyStringIsOk() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 8));
 		Task task = new Task(savedTask.getId(), row.getId(), "", 1, 8);
 
@@ -282,7 +285,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void updateTaskReturnsTheSavedTaskWithSameId() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = taskService.saveNewTask(new Task(row.getId(), "Work to do!", 1, 1));
 
 		savedTask.setTitle("new title");
@@ -293,7 +296,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void updateTaskThrowsExceptionIfIdDoesNotExist() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = new Task(88L, row.getId(), "Work to do!", 1, 5);
 
 		try {
@@ -308,7 +311,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void canDeleteATask() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = taskService.saveNewTask(new Task(row.getId(), "Work to do!", 1, 1));
 		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
 
@@ -319,7 +322,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void deletingATaskReturnsTheDeletedTask() throws Exception {
-		Row row = rowService.saveNewRow(new Row("test row"));
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = taskService.saveNewTask(new Task(row.getId(), "Work to do!", 55, 2));
 		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
 
@@ -347,7 +350,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void canFindASingleTaskById() {
-		Long rowId = this.createRowWithSQLOnly("row");
+		Long rowId = this.createRowWithSQLOnly(projectPlanId, "row");
 		Long taskId = this.createTaskWithSQLOnly(rowId, "tittle");
 
 		Task foundTask = taskService.findTaskWithId(taskId);

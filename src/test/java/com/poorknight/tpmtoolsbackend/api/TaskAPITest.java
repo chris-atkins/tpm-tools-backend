@@ -218,7 +218,7 @@ public class TaskAPITest {
 			fail("expecting exception");
 
 		} catch (ResponseStatusException e) {
-			assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 			assertThat(e.getMessage()).contains("In order to perform this operation, the row id of the currently saved task must match the value passed in the url for rowId.");
 		}
 	}
@@ -292,7 +292,7 @@ public class TaskAPITest {
 			api.putTask(5L, 1L, new APITask(1L,5L, "something", 4, 3));
 			fail("expecting exception");
 		} catch (ResponseStatusException e) {
-			assertThat(e.getRawStatusCode()).isEqualTo(404);
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 			assertThat(e.getMessage()).contains("Cannot PUT the task.  No task exists with the passed id: 1");
 		}
 	}
@@ -308,7 +308,7 @@ public class TaskAPITest {
 			api.putTask(5L, 1L, task);
 			fail("expecting exception");
 		} catch(ResponseStatusException e) {
-			assertThat(e.getRawStatusCode()).isEqualTo(500);
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
 			assertThat(e.getMessage()).contains("Unexpected error encountered while attempting to update task with id 1.  Please try again, until a 200 message is returned.");
 		}
 	}
@@ -371,7 +371,7 @@ public class TaskAPITest {
 			api.deleteTask(5L, 55L);
 			fail("expecting exception");
 		} catch(ResponseStatusException e) {
-			assertThat(e.getRawStatusCode()).isEqualTo(404);
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 			assertThat(e.getMessage()).contains("Task with id 55 does not exist.");
 		}
 	}
@@ -385,7 +385,7 @@ public class TaskAPITest {
 			api.deleteTask(5L,55L);
 			fail("expecting exception");
 		} catch(ResponseStatusException e) {
-			assertThat(e.getRawStatusCode()).isEqualTo(500);
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
 			assertThat(e.getMessage()).contains("Unexpected error encountered while attempting to delete task with id 55.  Please try again, until a 404 message is returned.");
 		}
 	}
@@ -398,7 +398,7 @@ public class TaskAPITest {
 			api.deleteTask(5L,55L);
 			fail("expecting exception");
 		} catch(ResponseStatusException e) {
-			assertThat(e.getRawStatusCode()).isEqualTo(400);
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 			assertThat(e.getMessage()).contains("In order to perform this operation, the row id of the currently saved task must match the value passed in the url for rowId.");
 		}
 	}
@@ -411,7 +411,7 @@ public class TaskAPITest {
 			api.deleteTask(5L,55L);
 			fail("expecting exception");
 		} catch(ResponseStatusException e) {
-			assertThat(e.getRawStatusCode()).isEqualTo(500);
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
 			assertThat(e.getMessage()).contains("Unexpected error encountered while attempting to delete task with id 55.  Please try again, until a 404 message is returned.");
 		}
 	}

@@ -16,35 +16,45 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RowIT extends BaseIntegrationTestWithDatabase {
 
+	private Long projectPlanId;
 
 	@Override
 	@BeforeEach
 	void setUp() {
 		super.setUp();
-		this.deleteAllTasksAndRows();
+		this.deleteAllTasksAndRowsAndProjectPlans();
+		projectPlanId = this.createProjectPlanWithSQLOnly("tpm-tools");
 	}
 
 	@Test
 	void canCreateAndGetARow() throws JSONException {
-		ResponseEntity<String> postResponse = postNewRow("{\"title\": \"first title\"}");
+		ResponseEntity<String> postResponse = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "first title"
+  			}""", projectPlanId));
 
 		assertThat(postResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		JsonNode responseNode = getRootJsonNode(postResponse);
 		List<Map.Entry<String, JsonNode>> fieldList = getAllFieldsForNode(responseNode);
-		assertThat(fieldList.size()).isEqualTo(3);
+		assertThat(fieldList.size()).isEqualTo(4);
 
 		assertThat(fieldList.get(0).getKey()).isEqualTo("id");
 		assertThat(fieldList.get(0).getValue().asLong()).isGreaterThan(0);
 		assertThat(fieldList.get(0).getValue().fields().hasNext()).isFalse();
 
-		assertThat(fieldList.get(1).getKey()).isEqualTo("title");
-		assertThat(fieldList.get(1).getValue().asText()).isEqualTo("first title");
+		assertThat(fieldList.get(1).getKey()).isEqualTo("projectPlanId");
+		assertThat(fieldList.get(1).getValue().asLong()).isEqualTo(projectPlanId);
 		assertThat(fieldList.get(1).getValue().fields().hasNext()).isFalse();
 
-		assertThat(fieldList.get(2).getKey()).isEqualTo("tasks");
-		assertThat(fieldList.get(2).getValue().isArray()).isTrue();
+		assertThat(fieldList.get(2).getKey()).isEqualTo("title");
+		assertThat(fieldList.get(2).getValue().asText()).isEqualTo("first title");
 		assertThat(fieldList.get(2).getValue().fields().hasNext()).isFalse();
+
+		assertThat(fieldList.get(3).getKey()).isEqualTo("tasks");
+		assertThat(fieldList.get(3).getValue().isArray()).isTrue();
+		assertThat(fieldList.get(3).getValue().fields().hasNext()).isFalse();
 
 		Long expectedId = fieldList.get(0).getValue().asLong();
 
@@ -55,30 +65,36 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				[
 					{
 						"id": %d,
+						"projectPlanId": %d,
 						"title": "first title",
 						"tasks": []
 					}
 				]
-				""", expectedId);
+				""", expectedId, projectPlanId);
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
 
 	@Test
 	void canSaveARowWithAnEmptyTitle() {
-		ResponseEntity<String> response = postNewRow("{\"title\": \"\"}");
+		ResponseEntity<String> response = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": ""
+  			}""", projectPlanId));
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		JsonNode responseNode = getRootJsonNode(response);
-		List<Map.Entry<String, JsonNode>> fieldList = getAllFieldsForNode(responseNode);
-
-		assertThat(fieldList.get(1).getKey()).isEqualTo("title");
-		assertThat(fieldList.get(1).getValue().asText()).isEqualTo("");
+		assertThat(responseNode.get("title").asText()).isEqualTo("");
 	}
 
 	@Test
 	void canChangeARowsTitleWithAPATCHRequest() throws JSONException {
-		ResponseEntity<String> postResponse = postNewRow("{\"title\": \"original title\"}");
+		ResponseEntity<String> postResponse = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "original title"
+  			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(postResponse);
 
 		ResponseEntity<String> patchResponse = patchRow(rowId,"{\"title\": \"new title\"}");
@@ -89,41 +105,49 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				[
 					{
 						"id": %d,
+						"projectPlanId": %d,
 						"title": "new title",
 						"tasks": []
 					}
 				]
-				""", rowId);
+				""", rowId, projectPlanId);
 
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
 	private Long getRowIdFromPostResponse(ResponseEntity<String> postResponse) {
 		JsonNode responseNode = getRootJsonNode(postResponse);
-		List<Map.Entry<String, JsonNode>> fieldList = getAllFieldsForNode(responseNode);
-		Long rowId = fieldList.get(0).getValue().asLong();
-		return rowId;
+		return responseNode.get("id").asLong();
 	}
 
 	@Test
 	void PUTRequestsAreNotAllowed() {
-		ResponseEntity<String> postResponse = postNewRow("{\"title\": \"original title\"}");
+		ResponseEntity<String> postResponse = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "original title"
+  			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(postResponse);
 
 		String putRequestBody  = String.format("""
 				{
 					"id": %d,
+					"projectPlanId": %d,
 					"title": "new title",
 					"tasks": []
 				}
-				""", rowId);
+				""", rowId, projectPlanId);
 		ResponseEntity<String> patchResponse = makePUTRequest(putRequestBody, "/rows/" + rowId);
 		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 	}
 
 	@Test
 	void addingATaskToARowViaTaskAPIWillResultInItBeingReturnedWithAGet() throws Exception {
-		ResponseEntity<String> rowResponse = postNewRow("{\"title\": \"something awesome\"}");
+		ResponseEntity<String> rowResponse = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "something awesome"
+  			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(rowResponse);
 
 		ResponseEntity<String> taskResponse = postNewTask(rowId, "{\"rowId\": " + rowId + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}");
@@ -136,6 +160,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				[
 					{
 						"id": %d,
+						"projectPlanId": %d,
 						"title": "something awesome",
 						"tasks": [
 							{
@@ -148,14 +173,22 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 						]
 					}
 				]
-				""", rowId, taskId, rowId);
+				""", rowId, projectPlanId, taskId, rowId);
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
 	@Test
 	void movingATaskAwayFromARowViaTaskAPIWillResultInItNoLongerBeingInTheTaskList() throws Exception {
-		ResponseEntity<String> rowResponse1 = postNewRow("{\"title\": \"something awesome\"}");
-		ResponseEntity<String> rowResponse2 = postNewRow("{\"title\": \"something that is fine\"}");
+		ResponseEntity<String> rowResponse1 = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "something awesome"
+  			}""", projectPlanId));
+		ResponseEntity<String> rowResponse2 = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "something that is fine"
+  			}""", projectPlanId));
 		Long rowId1 = getRowIdFromPostResponse(rowResponse1);
 		Long rowId2 = getRowIdFromPostResponse(rowResponse2);
 
@@ -169,6 +202,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				[
 					{
 						"id": %d,
+						"projectPlanId": %d,
 						"title": "something awesome",
 						"tasks": [
 							{
@@ -182,11 +216,12 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 					},
 					{
 						"id": %d,
+						"projectPlanId": %d,
 						"title": "something that is fine",
 						"tasks": []
 					}
 				]
-				""", rowId1, taskId, rowId1, rowId2);
+				""", rowId1, projectPlanId, taskId, rowId1, rowId2, projectPlanId);
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 
 		//Here is the important bit of this test:  especially notice rowId2 -> we're updating the row the task belongs to
@@ -201,11 +236,13 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				[
 					{
 						"id": %d,
+						"projectPlanId": %d,
 						"title": "something awesome",
 						"tasks": []
 					},
 					{
 						"id": %d,
+						"projectPlanId": %d,
 						"title": "something that is fine",
 						"tasks": [
 							{
@@ -218,13 +255,17 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 						]
 					}
 				]
-				""", rowId1, rowId2, taskId, rowId2);
+				""", rowId1, projectPlanId, rowId2, projectPlanId, taskId, rowId2);
 		JSONAssert.assertEquals(newExpectedResults, updatedGetResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
 	@Test
 	void canDeleteARowAndGetDeletedRowInTheResponse() throws Exception {
-		ResponseEntity<String> postResponse = postNewRow("{\"title\": \"original title\"}");
+		ResponseEntity<String> postResponse = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "original title"
+  			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(postResponse);
 
 		ResponseEntity<String> deleteResponse = makeDELETERequest("/rows/" + rowId);
@@ -233,10 +274,11 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		String expectedResponse = String.format("""
 				{
 					"id": %d,
+					"projectPlanId": %d,
 					"title": "original title",
 					"tasks": []
 				}
-				""", rowId);
+				""", rowId, projectPlanId);
 		JSONAssert.assertEquals(expectedResponse, deleteResponse.getBody(), JSONCompareMode.STRICT);
 
 		// row has been deleted - and does not show up in get request

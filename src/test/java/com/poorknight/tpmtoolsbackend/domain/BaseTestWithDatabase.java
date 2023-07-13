@@ -56,6 +56,21 @@ public class BaseTestWithDatabase {
 		}
 	}
 
+	protected void deleteAllTasksAndRowsAndProjectPlans() {
+
+		this.deleteAllTasksAndRows();
+		try {
+			Connection connection = this.getConnection();
+			Statement statement = connection.createStatement();
+			statement.executeUpdate("DELETE FROM P0_PROJECT_PLAN");
+
+			statement.close();
+			connection.close();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	protected Long createTaskWithSQLOnly(Long rowId, String title) {
 		try {
 			Connection connection = this.getConnection();
@@ -78,16 +93,16 @@ public class BaseTestWithDatabase {
 		}
 	}
 
-	protected Long createRowWithSQLOnly(String title) {
+	protected Long createRowWithSQLOnly(Long projectPlanId, String title) {
 		try {
 			Connection connection = this.getConnection();
 
 			Statement statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO P1_ROW (TITLE) VALUES (\"" + title + "\")");
+			statement.executeUpdate("INSERT INTO P1_ROW (P0_PROJECT_PLAN_FK, TITLE) VALUES (" + projectPlanId + ", \"" + title + "\")");
 			statement.close();
 
 			Statement rowQueryStatement = connection.createStatement();
-			ResultSet resultSet = rowQueryStatement.executeQuery("SELECT * FROM P1_ROW WHERE TITLE=\"" + title + "\"");
+			ResultSet resultSet = rowQueryStatement.executeQuery("SELECT * FROM P1_ROW WHERE P0_PROJECT_PLAN_FK=" + projectPlanId + " AND TITLE=\"" + title + "\"");
 
 			int count = 0;
 			Long rowId = null;
@@ -103,6 +118,37 @@ public class BaseTestWithDatabase {
 				throw new RuntimeException("Expecting exactly 1 result for row query.  Instead found " + count);
 			}
 			return rowId;
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long createProjectPlanWithSQLOnly(String title) {
+		try {
+			Connection connection = this.getConnection();
+
+			Statement statement = connection.createStatement();
+			statement.executeUpdate("INSERT INTO P0_PROJECT_PLAN (TITLE) VALUES (\"" + title + "\")");
+			statement.close();
+
+			Statement rowQueryStatement = connection.createStatement();
+			ResultSet resultSet = rowQueryStatement.executeQuery("SELECT * FROM P0_PROJECT_PLAN WHERE TITLE=\"" + title + "\"");
+
+			int count = 0;
+			Long projectPlanId = null;
+			while (resultSet.next()) {
+				count++;
+				projectPlanId = resultSet.getLong("ID");
+			}
+
+			rowQueryStatement.close();
+			connection.close();
+
+			if (count != 1) {
+				throw new RuntimeException("Expecting exactly 1 result for row query.  Instead found " + count);
+			}
+			return projectPlanId;
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);

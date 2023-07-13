@@ -2,7 +2,6 @@ package com.poorknight.tpmtoolsbackend.integrationtests;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mysql.cj.util.StringUtils;
 import com.poorknight.tpmtoolsbackend.TpmToolsBackendApplication;
 import com.poorknight.tpmtoolsbackend.domain.BaseTestWithDatabase;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +91,7 @@ public class BaseIntegrationTestWithDatabase extends BaseTestWithDatabase {
 
 	private ResponseEntity<String> buildRequestForRestMethod(String jsonRequestBodyString, String path, HttpMethod restMethod) {
 		HttpEntity<String> entity = new HttpEntity<>(jsonRequestBodyString, headers);
-		if (StringUtils.isNullOrEmpty(jsonRequestBodyString)) {
+		if (jsonRequestBodyString == null || jsonRequestBodyString.equals("")) {
 			entity = new HttpEntity<>(jsonRequestBodyString);  // don't require content-type headers if no body
 		}
 		try {

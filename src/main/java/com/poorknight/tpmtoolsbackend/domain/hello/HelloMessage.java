@@ -1,7 +1,7 @@
 package com.poorknight.tpmtoolsbackend.domain.hello;
 
 import lombok.*;
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Data

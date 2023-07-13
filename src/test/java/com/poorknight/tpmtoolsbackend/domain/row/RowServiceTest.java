@@ -9,29 +9,29 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Autowired
 	private RowService rowService;
 
+	private Long projectPlanId;
+
 	@BeforeEach
 	public void setUp() {
-		this.deleteAllTasksAndRows();
+		this.deleteAllTasksAndRowsAndProjectPlans();
+		projectPlanId = createProjectPlanWithSQLOnly("new plan");
 	}
-
 
 	@Test
 	void canSaveNewRowWithTitleAndNoTasks() throws Exception {
-		this.rowService.saveNewRow(new Row("new row title", new ArrayList<>()));
+		this.rowService.saveNewRow(new Row(projectPlanId, "new row title", new ArrayList<>()));
 
 		int rowCount = findCountOfRows();
 		assertThat(rowCount).isEqualTo(1);
@@ -42,14 +42,14 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void savingRowReturnsId() {
-		Row row = this.rowService.saveNewRow(new Row(null,"new row title", new ArrayList<>()));
+		Row row = this.rowService.saveNewRow(new Row(projectPlanId,"new row title", new ArrayList<>()));
 		assertThat(row.getId()).isNotNull();
 	}
 
 	@Test
 	void cannotSaveNewRowWithIdSpecified() {
 		try {
-			this.rowService.saveNewRow(new Row(1L, "title", new ArrayList<>()));
+			this.rowService.saveNewRow(new Row(1L, projectPlanId,"title", new ArrayList<>()));
 			fail("Expecting exception");
 		} catch (RuntimeException e) {
 			assertThat(e.getMessage()).contains("New Row cannot be saved with an id.  This is auto-assigned by the DB.  Maybe you would like to use an update operation.");
@@ -60,7 +60,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	void cannotSaveNewRowWithTaskList() {
 		try {
 			List<Task> taskList = ImmutableList.<Task>builder().add(new Task(5L, "tilte", 1, 5)).build();
-			Row newRow = new Row(null, "title", taskList);
+			Row newRow = new Row(null, projectPlanId, "title", taskList);
 			this.rowService.saveNewRow(newRow);
 			fail("Expecting exception");
 		} catch (RuntimeException e) {
@@ -70,7 +70,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void canSaveNewRowWithNullTaskList() throws Exception {
-		Row newRow = new Row("new row title", null);
+		Row newRow = new Row(projectPlanId, "new row title", null);
 		newRow.setTaskList(null);
 		this.rowService.saveNewRow(newRow);
 
@@ -83,8 +83,8 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void canGetAllRows() {
-		createRowWithSQLOnly("ohai");
-		createRowWithSQLOnly("there");
+		createRowWithSQLOnly(projectPlanId, "ohai");
+		createRowWithSQLOnly(projectPlanId, "there");
 
 		List<Row> rows = rowService.getAllRows();
 
@@ -99,8 +99,8 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void gettingRowsIncludesAllTasksAssociatedWithEach() {
-		Long id1 = createRowWithSQLOnly("ohai");
-		Long id2 = createRowWithSQLOnly("there");
+		Long id1 = createRowWithSQLOnly(projectPlanId, "ohai");
+		Long id2 = createRowWithSQLOnly(projectPlanId, "there");
 
 		createTaskWithSQLOnly(id1, "first");
 		createTaskWithSQLOnly(id2, "second1");
@@ -124,8 +124,8 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void canUpdateARowsTitle() {
-		Long id = createRowWithSQLOnly("ohai");
-		Row row = new Row(id, "new title");
+		Long id = createRowWithSQLOnly(projectPlanId, "ohai");
+		RowPatch row = new RowPatch(id, "new title");
 
 		rowService.updateRow(row);
 
@@ -133,36 +133,12 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		assertThat(allRows.get(0).getTitle()).isEqualTo("new title");
 	}
 
-	@Test
-	void updateDoesNotWorkIfAnyTasksArePassed() {
-		try {
-			Long id = createRowWithSQLOnly("ohai");
-			Row row = new Row(id, "new title", Arrays.asList(new Task()));
-
-			rowService.updateRow(row);
-			fail("Expecting exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).contains("New Row cannot be updated with any tasks.  No updates to any tasks will be made through this operation - throwing an exception is to avoid any false impression that tasks might be updated.  Please pass an empty list, and make any task changes by updating the tasks themselves. Thanks!");
-		}
-	}
-
-	@Test
-	void updateWorksIfTaskListIsNull() {
-		Long id = createRowWithSQLOnly("ohai");
-		Row row = new Row(id, "new title");
-		row.setTaskList(null);
-
-		rowService.updateRow(row);
-
-		List<Row> allRows = rowService.getAllRows();
-		assertThat(allRows.get(0).getTitle()).isEqualTo("new title");
-	}
 
 	@Test
 	void updateDoesNotWorkOnARowWithANonexistentId() {
 		try {
-			Long id = createRowWithSQLOnly("ohai");
-			Row row = new Row(id + 1, "new title");
+			Long id = createRowWithSQLOnly(projectPlanId, "ohai");
+			RowPatch row = new RowPatch(id + 1, "new title");
 
 			rowService.updateRow(row);
 			fail("Expecting exception");
@@ -178,8 +154,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	@Test
 	void updateDoesNotWorkWithNullId() {
 		try {
-			Long id = createRowWithSQLOnly("ohai");
-			Row row = new Row("new title");
+			RowPatch row = new RowPatch(null, "new title");
 
 			rowService.updateRow(row);
 			fail("Expecting exception");
@@ -190,7 +165,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void canDeleteAnEmptyRowById() {
-		Long rowId = createRowWithSQLOnly("new row");
+		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
 		int rowCount = findCountOfRows();
 		assertThat(rowCount).isEqualTo(1);
 
@@ -202,7 +177,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void cannotDeleteARowThatHasTasksAssociatedWithIt() {
-		Long rowId = createRowWithSQLOnly("new row");
+		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
 		createTaskWithSQLOnly(rowId, "some task");
 		assertThat(findCountOfRows()).isEqualTo(1);
 		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
@@ -224,7 +199,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Test
 	void deleteReturnsTheObjectThatWasDeleted() {
-		Long rowId = createRowWithSQLOnly("new row");
+		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
 		int rowCount = findCountOfRows();
 		assertThat(rowCount).isEqualTo(1);
 
