@@ -1,7 +1,7 @@
 package com.poorknight.tpmtoolsbackend.domain.tasks;
 
 import com.poorknight.tpmtoolsbackend.domain.BaseUnitTestWithDatabase;
-import com.poorknight.tpmtoolsbackend.domain.row.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.RowService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +37,8 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	void canSaveANewTaskWithARowIdAndTitleAndSizeAndPosition() throws Exception {
 		int originalCount = findTotalNumberOfTasks();
 
-		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
-		taskService.saveNewTask(new Task(row.getId(), "Work to do!", 33, 2));
+		Long rowId = createRowWithSQLOnly(projectPlanId, "test row");
+		taskService.saveNewTask(new Task(rowId, "Work to do!", 33, 2));
 
 		int newCount = findTotalNumberOfTasks();
 		boolean found = canFindTaskWithTitle("Work to do!");

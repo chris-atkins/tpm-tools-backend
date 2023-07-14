@@ -72,10 +72,14 @@ public class BaseTestWithDatabase {
 	}
 
 	protected Long createTaskWithSQLOnly(Long rowId, String title) {
+		return this.createTaskWithSQLOnly(rowId, title, 1, 1);
+
+	}
+	protected Long createTaskWithSQLOnly(Long rowId, String title, Integer size, Integer position) {
 		try {
 			Connection connection = this.getConnection();
 			Statement statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO TASK (P1_ROW_FK, TITLE, SIZE) VALUES (" + rowId + ", \"" + title + "\", 1)");
+			statement.executeUpdate("INSERT INTO TASK (P1_ROW_FK, TITLE, SIZE, POSITION) VALUES (" + rowId + ", \"" + title + "\", " + size + ", " + position + ")");
 			statement.close();
 
 			Statement taskQueryStatement = connection.createStatement();

@@ -1,7 +1,7 @@
 package com.poorknight.tpmtoolsbackend.domain.projectplan;
 
 import com.poorknight.tpmtoolsbackend.domain.BaseUnitTestWithDatabase;
-import com.poorknight.tpmtoolsbackend.domain.row.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

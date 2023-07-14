@@ -3,9 +3,10 @@ package com.poorknight.tpmtoolsbackend.api;
 import com.poorknight.tpmtoolsbackend.api.entity.response.APIRow;
 import com.poorknight.tpmtoolsbackend.api.entity.response.APIRowPatch;
 import com.poorknight.tpmtoolsbackend.api.entity.response.APITask;
-import com.poorknight.tpmtoolsbackend.domain.row.Row;
-import com.poorknight.tpmtoolsbackend.domain.row.RowPatch;
 import com.poorknight.tpmtoolsbackend.domain.row.RowService;
+import com.poorknight.tpmtoolsbackend.domain.row.RowServiceValidator;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,11 +36,11 @@ public class RowAPITest {
 	void getAllRowsReturnsResponseBasedOnServiceResults() {
 		Task task1 = new Task(1L, 5L, "hi", 7, 4);
 		Task task2 = new Task(2L, 5L, "oh", 8, 5);
-		Row row1 = new Row(5L, 33L,"the real title", Arrays.asList(task1, task2));
+		Row row1 = new Row(5L, 33L,"the real title", List.of(task1, task2));
 
 		Row row2 = new Row(6L, 33L,"an imaginary title", new ArrayList<>());
 
-		Mockito.when(rowService.getAllRows()).thenReturn(Arrays.asList(row1, row2));
+		Mockito.when(rowService.getAllRows()).thenReturn(List.of(row1, row2));
 
 		List<APIRow> response = api.getAllRows();
 
@@ -92,7 +92,7 @@ public class RowAPITest {
 	@Test
 	void postNewRowDoesNotAcceptTasksInTheRow() {
 		try {
-			api.postNewRow(new APIRow(null, 33L, "ohai", Arrays.asList(new APITask(1L, 2L, "hi", 3, 4))));
+			api.postNewRow(new APIRow(null, 33L, "ohai", List.of(new APITask(1L, 2L, "hi", 3, 4))));
 			fail("Expecting exception");
 		} catch (ResponseStatusException e) {
 			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -135,10 +135,10 @@ public class RowAPITest {
 
 	@Test
 	void patchRowReturnsResponseBasedOnServiceResultsIncludingTasks() {
-		RowPatch expectedInput = new RowPatch(5L, "st");
-		Row responseFromService = new Row(6L, 33L, "ste", Arrays.asList(new Task(1L, 2L, "s", 4, 5)));
+		RowPatchTemplate expectedInput = new RowPatchTemplate(5L, "st", null);
+		Row responseFromService = new Row(6L, 33L, "ste", List.of(new Task(1L, 2L, "s", 4, 5)));
 
-		Mockito.when(rowService.updateRow(expectedInput)).thenReturn(responseFromService);
+		Mockito.when(rowService.patchRow(expectedInput)).thenReturn(responseFromService);
 
 		APIRowPatch row = new APIRowPatch("st");
 		APIRow response = api.patchRow(5L, row);
@@ -163,7 +163,7 @@ public class RowAPITest {
 
 	@Test
 	void patchThrows404StyleExceptionOnNotFoundRow() {
-		Mockito.when(rowService.updateRow(Mockito.any())).thenThrow(new RowService.RowNotFoundException("no!"));
+		Mockito.when(rowService.patchRow(Mockito.any())).thenThrow(new RowServiceValidator.RowNotFoundException("no!"));
 
 		try {
 			api.patchRow(1L, new APIRowPatch("title"));
@@ -191,7 +191,7 @@ public class RowAPITest {
 
 	@Test
 	void deleteRowReturns404StyleErrorIfServiceRespondsWithNotFoundException() {
-		Mockito.when(rowService.deleteEmptyRowById(55L)).thenThrow(new RowService.RowNotFoundException("NO ROW FOR YOU"));
+		Mockito.when(rowService.deleteEmptyRowById(55L)).thenThrow(new RowServiceValidator.RowNotFoundException("NO ROW FOR YOU"));
 
 		try {
 			api.deleteRow(55L);
@@ -208,7 +208,7 @@ public class RowAPITest {
 
 	@Test
 	void deleteRowReturnsBadRequestStyleErrorIfServiceFailsForTasksExist() {
-		Mockito.when(rowService.deleteEmptyRowById(55L)).thenThrow(new RowService.CannotDeleteNonEmptyRowException("NO ROW FOR YOU"));
+		Mockito.when(rowService.deleteEmptyRowById(55L)).thenThrow(new RowServiceValidator.CannotDeleteNonEmptyRowException("NO ROW FOR YOU"));
 
 		try {
 			api.deleteRow(55L);

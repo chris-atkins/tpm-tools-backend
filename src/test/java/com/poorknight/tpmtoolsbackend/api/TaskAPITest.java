@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -329,7 +328,7 @@ public class TaskAPITest {
 	void getTasksRetrievesAllTasksFromServiceAndIncludesIds() {
 		Task task1 = new Task(5L, 33L, "st", 4, 2);
 		Task task2 = new Task(6L, 33L,"st else", 7, 3);
-		List<Task> taskList = Arrays.asList(task1, task2);
+		List<Task> taskList = List.of(task1, task2);
 		Mockito.when(taskService.getAllTasksForRow(33L)).thenReturn(taskList);
 
 		List<APITask> apiTasks = api.getTasks(33L);

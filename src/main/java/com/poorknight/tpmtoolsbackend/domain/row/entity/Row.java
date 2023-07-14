@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend.domain.row;
+package com.poorknight.tpmtoolsbackend.domain.row.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;

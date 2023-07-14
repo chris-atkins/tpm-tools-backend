@@ -1,5 +1,10 @@
 package com.poorknight.tpmtoolsbackend.domain.row;
 
+import com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectConsistencyValidator;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
+import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,18 +25,13 @@ public class RowService {
 	@Autowired
 	private TaskService taskService;
 
-	public Row saveNewRow(Row newRow) {
-		validateRowToSaveThrowingExceptions(newRow);
-		return rowRepository.save(newRow);
-	}
+	@Autowired
+	private ProjectConsistencyValidator projectConsistencyValidator;
 
-	private void validateRowToSaveThrowingExceptions(Row newRow) {
-		if (newRow.getId() != null) {
-			throw new RuntimeException("New Row cannot be saved with an id.  This is auto-assigned by the DB.  Maybe you would like to use an update operation.");
-		}
-		if (newRow.getTaskList() != null && newRow.getTaskList().size() > 0 ) {
-			throw new RuntimeException("New Row cannot be saved with any tasks.  First save a row, then add tasks to it by saving individual tasks with a reference to the rowId.  Thanks!");
-		}
+
+	public Row saveNewRow(Row newRow) {
+		RowServiceValidator.validateRowToSaveThrowingExceptions(newRow);
+		return rowRepository.save(newRow);
 	}
 
 	public List<Row> getAllRows() {
@@ -43,57 +43,47 @@ public class RowService {
 		return results;
 	}
 
-	public Row updateRow(RowPatch rowToPatch) {
-		validateRowToUpdateThrowingExceptions(rowToPatch);
-		Optional<Row> existingRow = rowRepository.findById(rowToPatch.getId());
-
-		if (existingRow.isEmpty()) {
-			throw new RowNotFoundException("The rowId passed does not exist!  It is impossible to perform an update on a row that does not exist.");
-		}
-		Row updatedRow = existingRow.get();
-		updatedRow.setTitle(rowToPatch.getTitle());
-
-		return rowRepository.save(updatedRow);
-	}
-
-	private void validateRowToUpdateThrowingExceptions(RowPatch rowToUpdate) {
-		if (rowToUpdate.getId() == null) {
-			throw new RuntimeException("Cannot update a row that does not have an id specified.  Maybe you meant to save a new row, instead of an update?");
-		}
-	}
-
 	public Row deleteEmptyRowById(Long rowId) {
-		Row row = getRowToBeDeletedWhileValidatingWithExceptions(rowId);
+		Optional<Row> maybeRow = rowRepository.findById(rowId);
+		RowServiceValidator.validateRowDelete(rowId, maybeRow);
+
+		Row row = maybeRow.get();
 		rowRepository.deleteById(rowId);
 		return row;
 	}
 
-	private Row getRowToBeDeletedWhileValidatingWithExceptions(Long rowId) {
-		Optional<Row> maybeRow = rowRepository.findById(rowId);
+	public Row patchRow(RowPatchTemplate rowPatchTemplate) {
+		Optional<Row> maybeRow = (rowPatchTemplate.getId() == null) ?
+				Optional.empty() :
+				rowRepository.findById(rowPatchTemplate.getId());
 
-		if(maybeRow.isEmpty()) {
-			throw new RowNotFoundException("The rowId passed does not point to a valid row.  No changes were made.");
+		RowServiceValidator.validateRowPatch(rowPatchTemplate, maybeRow);
+		Row rowToUpdate = maybeRow.get();
+		projectConsistencyValidator.validateRowChangeSetThrowingExceptions(rowToUpdate, rowPatchTemplate);
+
+		if (rowPatchTemplate.getTitle() != null) {
+			rowToUpdate.setTitle(rowPatchTemplate.getTitle());
 		}
 
-		Row row = maybeRow.get();
-
-		if (!row.getTaskList().isEmpty()) {
-			throw new CannotDeleteNonEmptyRowException("Cannot delete a row that has tasks that belong to it.  Please delete the tasks or move them to another row before deleting this row.");
+		if (rowPatchTemplate.getTaskList() != null) {
+			updateTasksInRow(rowPatchTemplate);
 		}
-		return row;
+
+		return rowRepository.save(rowToUpdate);
 	}
 
+	private void updateTasksInRow(RowPatchTemplate rowPatchTemplate) {
+		for (RowPatchTemplateTask tastPatchTemplate : rowPatchTemplate.getTaskList()) {
+			Task taskBeingUpdated = taskService.findTaskWithId(tastPatchTemplate.getId());
 
-	public static class RowNotFoundException extends RuntimeException {
+			if (tastPatchTemplate.getSize() != null) {
+				taskBeingUpdated.setSize(tastPatchTemplate.getSize());
+			}
+			if (tastPatchTemplate.getPosition() != null) {
+				taskBeingUpdated.setPosition(tastPatchTemplate.getPosition());
+			}
 
-		public RowNotFoundException(String message) {
-			super(message);
-		}
-	}
-
-	public static class CannotDeleteNonEmptyRowException extends RuntimeException {
-		public CannotDeleteNonEmptyRowException(String message) {
-			super(message);
+			taskService.updateTask(taskBeingUpdated);
 		}
 	}
 }

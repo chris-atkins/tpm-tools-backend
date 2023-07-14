@@ -2,8 +2,9 @@ package com.poorknight.tpmtoolsbackend.api;
 
 import com.poorknight.tpmtoolsbackend.api.entity.response.APIRow;
 import com.poorknight.tpmtoolsbackend.api.entity.response.APIRowPatch;
-import com.poorknight.tpmtoolsbackend.domain.row.Row;
-import com.poorknight.tpmtoolsbackend.domain.row.RowPatch;
+import com.poorknight.tpmtoolsbackend.domain.row.RowServiceValidator;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
 import com.poorknight.tpmtoolsbackend.domain.row.RowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -47,12 +48,12 @@ public class RowAPI {
 	@PatchMapping(value = "/rows/{rowId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public APIRow patchRow(@PathVariable Long rowId, @RequestBody APIRowPatch rowPatch) {
 		validatePatchInputThrowingException(rowPatch);
-		RowPatch row = new RowPatch(rowId, rowPatch.getTitle());
+		RowPatchTemplate row = new RowPatchTemplate(rowId, rowPatch.getTitle(), null);
 		try {
-			Row updatedRow = rowService.updateRow(row);
+			Row updatedRow = rowService.patchRow(row);
 			return APIRow.fromDomainObject(updatedRow);
 
-		} catch(RowService.RowNotFoundException e) {
+		} catch(RowServiceValidator.RowNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
 		}
 	}
@@ -68,9 +69,9 @@ public class RowAPI {
 		try {
 			return APIRow.fromDomainObject(rowService.deleteEmptyRowById(rowId));
 
-		} catch (RowService.RowNotFoundException e) {
+		} catch (RowServiceValidator.RowNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
-		} catch (RowService.CannotDeleteNonEmptyRowException e) {
+		} catch (RowServiceValidator.CannotDeleteNonEmptyRowException e) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to complete operation.  Delete can only be performed on a row that has zero tasks associated with it.  No changes made.");
 		}
 	}

@@ -1,11 +1,9 @@
 package com.poorknight.tpmtoolsbackend.domain.projectplan;
 
-import com.poorknight.tpmtoolsbackend.domain.row.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import lombok.Data;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package com.poorknight.tpmtoolsbackend.api.entity.response;
 
 import com.google.common.collect.ImmutableList;
-import com.poorknight.tpmtoolsbackend.domain.row.Row;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
