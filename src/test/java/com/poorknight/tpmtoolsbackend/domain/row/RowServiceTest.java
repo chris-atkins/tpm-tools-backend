@@ -12,21 +12,22 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 
-@SpyBean(classes = {TaskRepository.class, ProjectConsistencyValidator.class})
+@SpyBean(classes = {RowRepository.class, TaskRepository.class, ProjectConsistencyValidator.class, RowServiceValidator.class})
 class RowServiceTest extends BaseUnitTestWithDatabase {
 
 	@Autowired
@@ -36,7 +37,13 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	private TaskRepository taskRepository;
 
 	@Autowired
+	private RowRepository rowRepository;
+
+	@Autowired
 	private ProjectConsistencyValidator projectConsistencyValidator;
+
+	@Autowired
+	private RowServiceValidator rowServiceValidator;
 
 	private Long projectPlanId;
 
@@ -45,7 +52,11 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		this.deleteAllTasksAndRowsAndProjectPlans();
 		projectPlanId = createProjectPlanWithSQLOnly("new plan");
 		Mockito.reset(taskRepository);
+		Mockito.reset(rowServiceValidator);
+		Mockito.reset(projectConsistencyValidator);
 	}
+
+	// SAVE NEW ROW TESTS
 
 	@Test
 	void canSaveNewRowWithTitleAndNoTasks() throws Exception {
@@ -59,30 +70,20 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	}
 
 	@Test
-	void savingRowReturnsId() {
+	void savingRowReturnsRowWithNewId() {
 		Row row = this.rowService.saveNewRow(new Row(projectPlanId,"new row title", new ArrayList<>()));
 		assertThat(row.getId()).isNotNull();
 	}
 
 	@Test
-	void cannotSaveNewRowWithIdSpecified() {
-		try {
-			this.rowService.saveNewRow(new Row(1L, projectPlanId,"title", new ArrayList<>()));
-			fail("Expecting exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).contains("New Row cannot be saved with an id.  This is auto-assigned by the DB.  Maybe you would like to use an update operation.");
-		}
-	}
+	void savingNewRowValidatesAndRethrowsExceptions() {
+		Row rowToSave = new Row(projectPlanId, "new row title", new ArrayList<>());
+		Mockito.doThrow(new RuntimeException("validation message")).when(rowServiceValidator).validateRowToSaveThrowingExceptions(rowToSave);
 
-	@Test
-	void cannotSaveNewRowWithTaskList() {
 		try {
-			List<Task> taskList = ImmutableList.<Task>builder().add(new Task(5L, "tilte", 1, 5)).build();
-			Row newRow = new Row(null, projectPlanId, "title", taskList);
-			this.rowService.saveNewRow(newRow);
-			fail("Expecting exception");
+			this.rowService.saveNewRow(rowToSave);
 		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).contains("New Row cannot be saved with any tasks.  First save a row, then add tasks to it by saving individual tasks with a reference to the rowId.  Thanks!");
+			assertThat(e.getMessage()).isEqualTo("validation message");
 		}
 	}
 
@@ -98,6 +99,8 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		boolean found = canFindRowWithTitle("new row title");
 		assertThat(found).isTrue();
 	}
+
+	// GET ALL ROWS TESTS
 
 	@Test
 	void canGetAllRows() {
@@ -139,6 +142,50 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		assertThat(rows.get(1).getTaskList().get(1).getTitle()).isEqualTo("second2");
 		assertThat(rows.get(1).getTaskList().get(1).getRowId()).isEqualTo(rows.get(1).getId());
 	}
+
+	// DELETE ROW TESTS
+
+
+	@Test
+	void canDeleteAnEmptyRowById() {
+		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
+		int rowCount = findCountOfRows();
+		assertThat(rowCount).isEqualTo(1);
+
+		rowService.deleteEmptyRowById(rowId);
+
+		int rowCountAfterDelete = findCountOfRows();
+		assertThat(rowCountAfterDelete).isEqualTo(0);
+	}
+
+	@Test
+	void deletingARowValidatesAndRethrowsExceptionsAndNothingIsDeleted() {
+		Long rowId = createRowWithSQLOnly(projectPlanId, "row title");
+		int initialRowCount = findCountOfRows();
+		Mockito.doThrow(new RuntimeException("validation message")).when(rowServiceValidator).validateRowDelete(5L, Optional.of(new Row(rowId, projectPlanId, "row title")));
+
+		try {
+			this.rowService.deleteEmptyRowById(rowId);
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("validation message");
+			assertThat(findCountOfRows()).isEqualTo(initialRowCount);
+		}
+	}
+
+	@Test
+	void deleteReturnsTheObjectThatWasDeleted() {
+		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
+		int rowCount = findCountOfRows();
+		assertThat(rowCount).isEqualTo(1);
+
+		Row deletedRow = rowService.deleteEmptyRowById(rowId);
+
+		assertThat(deletedRow.getId()).isEqualTo(rowId);
+		assertThat(deletedRow.getTitle()).isEqualTo("new row");
+		assertThat(deletedRow.getTaskList().size()).isEqualTo(0);
+	}
+
+	// UPDATE / PATCH TESTS
 
 	@Test
 	void canUpdateARowsTitle() {
@@ -230,7 +277,6 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		RowPatchTemplate rowTemplate = new RowPatchTemplate(rowId, "new title", List.of(taskTemplate));
 		rowService.patchRow(rowTemplate);
 
-
 		List<Row> allRows = rowService.getAllRows();
 
 		assertThat(allRows.size()).isEqualTo(1);
@@ -254,7 +300,6 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		RowPatchTemplateTask taskTemplate = new RowPatchTemplateTask(taskId, 3, null);
 		RowPatchTemplate rowTemplate = new RowPatchTemplate(rowId, "new title", List.of(taskTemplate));
 		rowService.patchRow(rowTemplate);
-
 
 		List<Row> allRows = rowService.getAllRows();
 
@@ -423,92 +468,21 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	}
 
 	@Test
-	void updateDoesNotWorkOnARowWithANonexistentId() {
-		try {
-			Long id = createRowWithSQLOnly(projectPlanId, "ohai");
-			RowPatchTemplate row = new RowPatchTemplate(id + 1, "new title", null);
+	void patchValidatesBeforeMakingAnyChangesAndRethrowsExceptionsFromValidator() {
+		doThrow(new RuntimeException("hi")).when(rowServiceValidator).validateRowPatch(any(), any());
 
-			rowService.patchRow(row);
-			fail("Expecting exception");
-
-		} catch (RowServiceValidator.RowNotFoundException e) {
-			assertThat(e.getMessage()).contains("The rowId passed does not exist!  It is impossible to perform an update on a row that does not exist.");
-
-		} catch (RuntimeException e) {
-			fail("expecting a RowNotFoundException - instead got " + e.getClass().getCanonicalName());
-		}
-	}
-
-	@Test
-	void updateDoesNotWorkWithNullId() {
-		try {
-			RowPatchTemplate row = new RowPatchTemplate(null, "new title", null);
-
-			rowService.patchRow(row);
-			fail("Expecting exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).contains("Cannot update a row that does not have an id specified.  Maybe you meant to save a new row, instead of an update?");
-		}
-	}
-
-	@Test
-	void canDeleteAnEmptyRowById() {
-		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
-		int rowCount = findCountOfRows();
-		assertThat(rowCount).isEqualTo(1);
-
-		rowService.deleteEmptyRowById(rowId);
-
-		int rowCountAfterDelete = findCountOfRows();
-		assertThat(rowCountAfterDelete).isEqualTo(0);
-	}
-
-	@Test
-	void cannotDeleteARowThatHasTasksAssociatedWithIt() {
-		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
-		createTaskWithSQLOnly(rowId, "some task");
-		assertThat(findCountOfRows()).isEqualTo(1);
-		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
+		Long rowId = createRowWithSQLOnly(projectPlanId, "ohai");
+		Long taskId = createTaskWithSQLOnly(rowId, "task 1", 1, 1);
+		RowPatchTemplateTask taskTemplate = new RowPatchTemplateTask(taskId, 2, 5);
+		RowPatchTemplate rorowPatchTemplate = new RowPatchTemplate(rowId, "ohai", List.of(taskTemplate));
 
 		try {
-			rowService.deleteEmptyRowById(rowId);
+			rowService.patchRow(rorowPatchTemplate);
 			fail("expecting exception");
-
-		} catch (RowServiceValidator.CannotDeleteNonEmptyRowException e) {
-
-			assertThat(findCountOfRows()).isEqualTo(1);
-			assertThat(findTotalNumberOfTasks()).isEqualTo(1);
-			assertThat(e.getMessage()).isEqualTo("Cannot delete a row that has tasks that belong to it.  Please delete the tasks or move them to another row before deleting this row.");
-
-		} catch (Exception e) {
-			fail("expecting CannotDeleteNonEmptyRowException, instead got " + e.getClass().getCanonicalName());
-		}
-	}
-
-	@Test
-	void deleteReturnsTheObjectThatWasDeleted() {
-		Long rowId = createRowWithSQLOnly(projectPlanId, "new row");
-		int rowCount = findCountOfRows();
-		assertThat(rowCount).isEqualTo(1);
-
-		Row deletedRow = rowService.deleteEmptyRowById(rowId);
-
-		assertThat(deletedRow.getId()).isEqualTo(rowId);
-		assertThat(deletedRow.getTitle()).isEqualTo("new row");
-		assertThat(deletedRow.getTaskList().size()).isEqualTo(0);
-	}
-
-	@Test
-	void deleteErrorsIfTheRowIDIsNotValid() {
-		try {
-			rowService.deleteEmptyRowById(67L);
-			fail("expecting exception");
-
-		} catch (RowServiceValidator.RowNotFoundException e) {
-			assertThat(e.getMessage()).isEqualTo("The rowId passed does not point to a valid row.  No changes were made.");
-
-		} catch (Exception e) {
-			fail("expecting a RowNotFoundException - instead got " + e.getClass().getCanonicalName());
+		} catch (RuntimeException e) {
+			assertThat(e.getMessage()).isEqualTo("hi");
+			Mockito.verifyNoInteractions(taskRepository);
+			Mockito.verify(rowRepository, never()).save(any());
 		}
 	}
 

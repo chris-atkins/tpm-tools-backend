@@ -6,7 +6,7 @@ import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,20 +17,17 @@ import java.util.Optional;
 
 @Service
 @Transactional(propagation = Propagation.REQUIRES_NEW)
+@RequiredArgsConstructor
 public class RowService {
 
-	@Autowired
-	private RowRepository rowRepository;
-
-	@Autowired
-	private TaskService taskService;
-
-	@Autowired
-	private ProjectConsistencyValidator projectConsistencyValidator;
+	private final RowRepository rowRepository;
+	private final TaskService taskService;
+	private final ProjectConsistencyValidator projectConsistencyValidator;
+	private final RowServiceValidator rowServiceValidator;
 
 
 	public Row saveNewRow(Row newRow) {
-		RowServiceValidator.validateRowToSaveThrowingExceptions(newRow);
+		rowServiceValidator.validateRowToSaveThrowingExceptions(newRow);
 		return rowRepository.save(newRow);
 	}
 
@@ -45,7 +42,7 @@ public class RowService {
 
 	public Row deleteEmptyRowById(Long rowId) {
 		Optional<Row> maybeRow = rowRepository.findById(rowId);
-		RowServiceValidator.validateRowDelete(rowId, maybeRow);
+		rowServiceValidator.validateRowDelete(rowId, maybeRow);
 
 		Row row = maybeRow.get();
 		rowRepository.deleteById(rowId);
@@ -57,15 +54,15 @@ public class RowService {
 				Optional.empty() :
 				rowRepository.findById(rowPatchTemplate.getId());
 
-		RowServiceValidator.validateRowPatch(rowPatchTemplate, maybeRow);
+		rowServiceValidator.validateRowPatch(rowPatchTemplate, maybeRow);
 		Row rowToUpdate = maybeRow.get();
-		projectConsistencyValidator.validateRowChangeSetThrowingExceptions(rowToUpdate, rowPatchTemplate);
 
 		if (rowPatchTemplate.getTitle() != null) {
 			rowToUpdate.setTitle(rowPatchTemplate.getTitle());
 		}
 
 		if (rowPatchTemplate.getTaskList() != null) {
+			projectConsistencyValidator.validateRowChangeSetThrowingExceptions(rowToUpdate, rowPatchTemplate);
 			updateTasksInRow(rowPatchTemplate);
 		}
 

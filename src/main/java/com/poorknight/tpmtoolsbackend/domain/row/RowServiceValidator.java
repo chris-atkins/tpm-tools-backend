@@ -2,12 +2,15 @@ package com.poorknight.tpmtoolsbackend.domain.row;
 
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
+import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 
+@Service
 public class RowServiceValidator {
 
-	static protected void validateRowToSaveThrowingExceptions(Row newRow) {
+	protected void validateRowToSaveThrowingExceptions(Row newRow) {
 		if (newRow.getId() != null) {
 			throw new RuntimeException("New Row cannot be saved with an id.  This is auto-assigned by the DB.  Maybe you would like to use an update operation.");
 		}
@@ -16,25 +19,32 @@ public class RowServiceValidator {
 		}
 	}
 
-	static protected void validateRowPatch(RowPatchTemplate rowPatchTemplate, Optional<Row> optionalBeingUpdated) {
+	protected void validateRowPatch(RowPatchTemplate rowPatchTemplate, Optional<Row> optionalBeingUpdated) {
 		if (rowPatchTemplate.getId() == null) {
 			throw new RuntimeException("Cannot update a row that does not have an id specified.  Maybe you meant to save a new row, instead of an update?");
 		}
 
 		if (optionalBeingUpdated.isEmpty()) {
-			throw new RowNotFoundException("The rowId passed does not exist!  It is impossible to perform an update on a row that does not exist.");
+			throw new RowNotFoundException("No row exists to be updated!  It is impossible to perform an update on a row that does not exist.");
+		}
+
+		if (optionalBeingUpdated.get().getId() != rowPatchTemplate.getId()) {
+			throw new MismatchedIdsException("The id does not match the proposed row to update.  No changes were made.");
 		}
 	}
 
-	static protected void validateRowDelete(Long rowId, Optional<Row> maybeRow) {
+	protected void validateRowDelete(Long rowId, Optional<Row> maybeRow) {
 		if(maybeRow.isEmpty()) {
-			throw new RowNotFoundException("The rowId passed does not point to a valid row.  No changes were made.");
+			throw new RowNotFoundException("No row exists to be deleted.  No changes were made.");
 		}
 
 		Row row = maybeRow.get();
 
 		if (!row.getTaskList().isEmpty()) {
 			throw new CannotDeleteNonEmptyRowException("Cannot delete a row that has tasks that belong to it.  Please delete the tasks or move them to another row before deleting this row.");
+		}
+		if (!Objects.equals(row.getId(), rowId)) {
+			throw new MismatchedIdsException("The id does not match the proposed row to delete.  No changes were made.");
 		}
 	}
 
@@ -48,6 +58,12 @@ public class RowServiceValidator {
 
 	public static class CannotDeleteNonEmptyRowException extends RuntimeException {
 		public CannotDeleteNonEmptyRowException(String message) {
+			super(message);
+		}
+	}
+
+	public class MismatchedIdsException extends RuntimeException {
+		public MismatchedIdsException(String message) {
 			super(message);
 		}
 	}
