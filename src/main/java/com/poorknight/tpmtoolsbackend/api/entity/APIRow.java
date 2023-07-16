@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend.api.entity.response;
+package com.poorknight.tpmtoolsbackend.api.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;

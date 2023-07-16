@@ -1,6 +1,6 @@
 package com.poorknight.tpmtoolsbackend.api;
 
-import com.poorknight.tpmtoolsbackend.api.entity.response.APIMessage;
+import com.poorknight.tpmtoolsbackend.api.entity.APIMessage;
 import com.poorknight.tpmtoolsbackend.domain.hello.HelloService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

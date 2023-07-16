@@ -1,7 +1,7 @@
 package com.poorknight.tpmtoolsbackend.api;
 
-import com.poorknight.tpmtoolsbackend.api.entity.response.APIRow;
-import com.poorknight.tpmtoolsbackend.api.entity.response.APIRowPatch;
+import com.poorknight.tpmtoolsbackend.api.entity.APIRow;
+import com.poorknight.tpmtoolsbackend.api.entity.APIRowPatch;
 import com.poorknight.tpmtoolsbackend.domain.row.RowServiceValidator;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
@@ -47,20 +47,13 @@ public class RowAPI {
 
 	@PatchMapping(value = "/rows/{rowId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public APIRow patchRow(@PathVariable Long rowId, @RequestBody APIRowPatch rowPatch) {
-		validatePatchInputThrowingException(rowPatch);
-		RowPatchTemplate row = new RowPatchTemplate(rowId, rowPatch.getTitle(), null);
+		RowPatchTemplate row = rowPatch.toDomainObject(rowId);
 		try {
 			Row updatedRow = rowService.patchRow(row);
 			return APIRow.fromDomainObject(updatedRow);
 
 		} catch(RowServiceValidator.RowNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
-		}
-	}
-
-	private void validatePatchInputThrowingException(APIRowPatch rowPatch) {
-		if (rowPatch.getTitle() == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Null is not valid for a row's title.");
 		}
 	}
 

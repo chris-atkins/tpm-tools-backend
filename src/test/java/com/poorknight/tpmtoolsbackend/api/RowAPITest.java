@@ -1,12 +1,14 @@
 package com.poorknight.tpmtoolsbackend.api;
 
-import com.poorknight.tpmtoolsbackend.api.entity.response.APIRow;
-import com.poorknight.tpmtoolsbackend.api.entity.response.APIRowPatch;
-import com.poorknight.tpmtoolsbackend.api.entity.response.APITask;
+import com.poorknight.tpmtoolsbackend.api.entity.APIRowPatchTask;
+import com.poorknight.tpmtoolsbackend.api.entity.APIRow;
+import com.poorknight.tpmtoolsbackend.api.entity.APIRowPatch;
+import com.poorknight.tpmtoolsbackend.api.entity.APITask;
 import com.poorknight.tpmtoolsbackend.domain.row.RowService;
 import com.poorknight.tpmtoolsbackend.domain.row.RowServiceValidator;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
+import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -140,7 +142,7 @@ public class RowAPITest {
 
 		Mockito.when(rowService.patchRow(expectedInput)).thenReturn(responseFromService);
 
-		APIRowPatch row = new APIRowPatch("st");
+		APIRowPatch row = new APIRowPatch("st", null);
 		APIRow response = api.patchRow(5L, row);
 
 		assertThat(response.getId()).isEqualTo(6L);
@@ -151,14 +153,24 @@ public class RowAPITest {
 	}
 
 	@Test
-	void patchRowDoesNotAllowNullTitle() {
-		try {
-			api.patchRow(1L, new APIRowPatch(null));
-			fail("Expecting exception");
-		} catch (ResponseStatusException e) {
-			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-			assertThat(e.getMessage()).contains("Null is not valid for a row's title.");
-		}
+	void patchRowPassesAllFieldsToServiceIncludingTasks() {
+		RowPatchTemplate expectedInput = new RowPatchTemplate(5L, "st", List.of(
+				new RowPatchTemplateTask(1L, 2, 3),
+				new RowPatchTemplateTask(2L, 3, 4)));
+		Row responseFromService = new Row(5L, 33L, "ste", List.of(
+				new Task(1L, 5L, "s", 2, 3),
+				new Task(2L, 5L, "s", 3, 4)));
+		Mockito.when(rowService.patchRow(expectedInput)).thenReturn(responseFromService);
+
+		APIRowPatch row = new APIRowPatch("st", List.of(new APIRowPatchTask(1L, 2, 3), new APIRowPatchTask(2L, 3, 4)));
+		APIRow response = api.patchRow(5L, row);
+
+		assertThat(response.getId()).isEqualTo(5L);
+		assertThat(response.getProjectPlanId()).isEqualTo(33L);
+		assertThat(response.getTitle()).isEqualTo("ste");
+		assertThat(response.getTasks().size()).isEqualTo(2);
+		assertThat(response.getTasks().get(0)).isEqualTo(new APITask(1L, 5L, "s", 2, 3));
+		assertThat(response.getTasks().get(1)).isEqualTo(new APITask(2L, 5L, "s", 3, 4));
 	}
 
 	@Test
@@ -166,7 +178,7 @@ public class RowAPITest {
 		Mockito.when(rowService.patchRow(Mockito.any())).thenThrow(new RowServiceValidator.RowNotFoundException("no!"));
 
 		try {
-			api.patchRow(1L, new APIRowPatch("title"));
+			api.patchRow(1L, new APIRowPatch("title", null));
 			fail("Expecting exception");
 
 		} catch (ResponseStatusException e) {

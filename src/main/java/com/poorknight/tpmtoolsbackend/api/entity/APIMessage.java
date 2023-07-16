@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend.api.entity.response;
+package com.poorknight.tpmtoolsbackend.api.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;

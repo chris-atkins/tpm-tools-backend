@@ -1,6 +1,6 @@
 package com.poorknight.tpmtoolsbackend.api;
 
-import com.poorknight.tpmtoolsbackend.api.entity.response.APITask;
+import com.poorknight.tpmtoolsbackend.api.entity.APITask;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,7 @@
 package com.poorknight.tpmtoolsbackend.integrationtests;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.SneakyThrows;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -111,6 +112,84 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 					}
 				]
 				""", rowId, projectPlanId);
+
+		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
+	}
+
+	@Test
+	@SneakyThrows
+	void canChangeSizeAndPositionOfRowsTasksWithAPATCHRequest() throws JSONException {
+		ResponseEntity<String> postResponse = postNewRow(String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "original title"
+  			}""", projectPlanId));
+		Long rowId = getRowIdFromPostResponse(postResponse);
+
+		ResponseEntity<String> task1Response = postNewTask(rowId, String.format("""
+				{
+					"rowId": %d,
+					"title": "task 1",
+					"size": 1,
+					"position": 1
+				}
+				""", rowId));
+		Long task1Id = getTaskIdFromPostResponse(task1Response);
+
+		ResponseEntity<String> task2Response = postNewTask(rowId, String.format("""
+				{
+					"rowId": %d,
+					"title": "task 2",
+					"size": 2,
+					"position": 2
+				}
+				""", rowId));
+		Long task2Id = getTaskIdFromPostResponse(task2Response);
+
+		ResponseEntity<String> patchResponse = patchRow(rowId,String.format("""
+    		{
+				"tasks": [
+					{
+						"id": %d,
+						"size": 2,
+						"position": 2
+					},
+					{
+						"id": %d,
+						"size": 3,
+						"position": 3
+					}
+				]
+    		}
+    	""", task1Id, task2Id));
+		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		String expectedResult = String.format("""
+				[
+					{
+						"id": %d,
+						"projectPlanId": %d,
+						"title": "original title",
+						"tasks": [
+							{
+								"id": %d,
+								"rowId": %d,
+								"title": "task 1",
+								"size": 2,
+								"position": 2
+							},
+							{
+								"id": %d,
+								"rowId": %d,
+								"title": "task 2",
+								"size": 3,
+								"position": 3
+							}
+						]
+					}
+				]
+				""", rowId, projectPlanId, task1Id, rowId, task2Id, rowId);
 
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 	}
@@ -293,8 +372,8 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		return response;
 	}
 
-	private ResponseEntity<String> patchRow(Long rowId, String taskJsonString) {
-		ResponseEntity<String> response = makePATCHRequest(taskJsonString, "/rows/" + rowId);
+	private ResponseEntity<String> patchRow(Long rowId, String rowPatchJsonString) {
+		ResponseEntity<String> response = makePATCHRequest(rowPatchJsonString, "/rows/" + rowId);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		return response;
 	}

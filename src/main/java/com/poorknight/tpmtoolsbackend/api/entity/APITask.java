@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend.api.entity.response;
+package com.poorknight.tpmtoolsbackend.api.entity;
 
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import lombok.AllArgsConstructor;
