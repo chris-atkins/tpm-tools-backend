@@ -42,9 +42,9 @@ public class RowAPITest {
 
 		Row row2 = new Row(6L, 33L,"an imaginary title", new ArrayList<>());
 
-		Mockito.when(rowService.getAllRows()).thenReturn(List.of(row1, row2));
+		Mockito.when(rowService.getAllRowsForProjectPlan(33L)).thenReturn(List.of(row1, row2));
 
-		List<APIRow> response = api.getAllRows();
+		List<APIRow> response = api.getAllRows(33L);
 
 		assertThat(response.size()).isEqualTo(2);
 		APIRow first = response.get(0);

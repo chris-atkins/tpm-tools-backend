@@ -31,8 +31,8 @@ public class RowService {
 		return rowRepository.save(newRow);
 	}
 
-	public List<Row> getAllRows() {
-		Iterable<Row> repositoryResults = rowRepository.findAll();
+	public List<Row> getAllRowsForProjectPlan(Long projectPlanId) {
+		Iterable<Row> repositoryResults = rowRepository.findByProjectPlanId(projectPlanId);
 		List<Row> results = new LinkedList<>();
 		for (Row row : repositoryResults) {
 			results.add(row);

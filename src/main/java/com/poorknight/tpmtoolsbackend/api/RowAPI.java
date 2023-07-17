@@ -23,8 +23,8 @@ public class RowAPI {
 	private RowService rowService;
 
 	@GetMapping
-	public List<APIRow> getAllRows() {
-		return rowService.getAllRows().stream()
+	public List<APIRow> getAllRows(@PathVariable Long projectPlanId) {
+		return rowService.getAllRowsForProjectPlan(projectPlanId).stream()
 				.map(APIRow::fromDomainObject)
 				.collect(Collectors.toList());
 	}

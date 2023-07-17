@@ -103,11 +103,11 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	// GET ALL ROWS TESTS
 
 	@Test
-	void canGetAllRows() {
+	void canGetAllRowsForAProjectPlan() {
 		createRowWithSQLOnly(projectPlanId, "ohai");
 		createRowWithSQLOnly(projectPlanId, "there");
 
-		List<Row> rows = rowService.getAllRows();
+		List<Row> rows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(rows.size()).isEqualTo(2);
 
@@ -119,6 +119,20 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 	}
 
 	@Test
+	void doesNotIncludeRowsFromOtherProjectPlans() {
+		Long otherProjectPlanId = createProjectPlanWithSQLOnly("a different one!");
+		createRowWithSQLOnly(projectPlanId, "ohai");
+		createRowWithSQLOnly(otherProjectPlanId, "NO!");
+
+		List<Row> rows = rowService.getAllRowsForProjectPlan(projectPlanId);
+
+		assertThat(rows.size()).isEqualTo(1);
+
+		assertThat(rows.get(0).getTitle()).isEqualTo("ohai");
+		assertThat(rows.get(0).getId()).isNotNull();
+	}
+
+	@Test
 	void gettingRowsIncludesAllTasksAssociatedWithEach() {
 		Long id1 = createRowWithSQLOnly(projectPlanId, "ohai");
 		Long id2 = createRowWithSQLOnly(projectPlanId, "there");
@@ -127,7 +141,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		createTaskWithSQLOnly(id2, "second1");
 		createTaskWithSQLOnly(id2, "second2");
 
-		List<Row> rows = rowService.getAllRows();
+		List<Row> rows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(rows.size()).isEqualTo(2);
 
@@ -194,7 +208,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 		rowService.patchRow(row);
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 		assertThat(allRows.size()).isEqualTo(1);
 		assertThat(allRows.get(0).getTitle()).isEqualTo("new title");
 	}
@@ -209,7 +223,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 		rowService.patchRow(row);
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -234,7 +248,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 		rowService.patchRow(row);
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -253,7 +267,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		rowService.patchRow(rowWithNull);
 
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -277,7 +291,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		RowPatchTemplate rowTemplate = new RowPatchTemplate(rowId, "new title", List.of(taskTemplate));
 		rowService.patchRow(rowTemplate);
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -301,7 +315,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		RowPatchTemplate rowTemplate = new RowPatchTemplate(rowId, "new title", List.of(taskTemplate));
 		rowService.patchRow(rowTemplate);
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -328,7 +342,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 		rowService.patchRow(row);
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -364,7 +378,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 		rowService.patchRow(row);
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -416,7 +430,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 			// swallow the exception, we want to test the resulting DB state :)
 		}
 
-		List<Row> allRows = rowService.getAllRows();
+		List<Row> allRows = rowService.getAllRowsForProjectPlan(projectPlanId);
 
 		assertThat(allRows.size()).isEqualTo(1);
 		Row returnedRow = allRows.get(0);
@@ -453,8 +467,8 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		RowPatchTemplateTask task1Template = new RowPatchTemplateTask(task1Id, 2, 1);
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(rowId, null, List.of(task1Template));
 
-		assertThat(rowService.getAllRows().size()).isEqualTo(1);
-		Row row = rowService.getAllRows().get(0);
+		List<Row> rows = rowService.getAllRowsForProjectPlan(projectPlanId);
+		assertThat(rows.size()).isEqualTo(1);
 
 		doThrow(new RuntimeException("some message")).when(projectConsistencyValidator).validateRowChangeSetThrowingExceptions(any(), eq(rowPatchTemplate));
 
