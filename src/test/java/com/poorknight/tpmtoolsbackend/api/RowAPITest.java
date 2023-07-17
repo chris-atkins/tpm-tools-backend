@@ -83,7 +83,7 @@ public class RowAPITest {
 		Mockito.when(rowService.saveNewRow(expectedInput)).thenReturn(responseFromService);
 
 		APIRow row = new APIRow(null, 4L,"tittle", null);
-		APIRow response = api.postNewRow(row);
+		APIRow response = api.postNewRow(4L, row);
 
 		assertThat(response.getId()).isEqualTo(1L);
 		assertThat(response.getProjectPlanId()).isEqualTo(4L);
@@ -94,7 +94,7 @@ public class RowAPITest {
 	@Test
 	void postNewRowDoesNotAcceptTasksInTheRow() {
 		try {
-			api.postNewRow(new APIRow(null, 33L, "ohai", List.of(new APITask(1L, 2L, "hi", 3, 4))));
+			api.postNewRow(33L, new APIRow(null, 33L, "ohai", List.of(new APITask(1L, 2L, "hi", 3, 4))));
 			fail("Expecting exception");
 		} catch (ResponseStatusException e) {
 			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -105,7 +105,7 @@ public class RowAPITest {
 	@Test
 	void postNewRowDoesNotAcceptARowId() {
 		try {
-			api.postNewRow(new APIRow(1L, 33L,"ohai", null));
+			api.postNewRow(33L, new APIRow(1L, 33L,"ohai", null));
 			fail("Expecting exception");
 		} catch (ResponseStatusException e) {
 			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -120,14 +120,14 @@ public class RowAPITest {
 
 		Mockito.when(rowService.saveNewRow(expectedInput)).thenReturn(responseFromService);
 
-		APIRow response1 = api.postNewRow(new APIRow(null, 33L,"tittle", null));
+		APIRow response1 = api.postNewRow(33L, new APIRow(null, 33L,"tittle", null));
 
 		assertThat(response1.getId()).isEqualTo(1L);
 		assertThat(response1.getProjectPlanId()).isEqualTo(33L);
 		assertThat(response1.getTitle()).isEqualTo("tittle");
 		assertThat(response1.getTasks().size()).isEqualTo(0);
 
-		APIRow response2 = api.postNewRow(new APIRow(null, 33L,"tittle", null));
+		APIRow response2 = api.postNewRow(33L, new APIRow(null, 33L,"tittle", null));
 
 		assertThat(response2.getId()).isEqualTo(1L);
 		assertThat(response2.getProjectPlanId()).isEqualTo(33L);

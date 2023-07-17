@@ -29,7 +29,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void canCreateAndGetARow() throws JSONException {
-		ResponseEntity<String> postResponse = postNewRow(String.format("""
+		ResponseEntity<String> postResponse = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "first title"
@@ -59,7 +59,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 
 		Long expectedId = fieldList.get(0).getValue().asLong();
 
-		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		ResponseEntity<String> getResponse = getAllRows(projectPlanId);
 		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		String expectedResult = String.format("""
@@ -75,10 +75,9 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
-
 	@Test
 	void canSaveARowWithAnEmptyTitle() {
-		ResponseEntity<String> response = postNewRow(String.format("""
+		ResponseEntity<String> response = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": ""
@@ -91,17 +90,17 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void canChangeARowsTitleWithAPATCHRequest() throws JSONException {
-		ResponseEntity<String> postResponse = postNewRow(String.format("""
+		ResponseEntity<String> postResponse = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "original title"
   			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(postResponse);
 
-		ResponseEntity<String> patchResponse = patchRow(rowId,"{\"title\": \"new title\"}");
+		ResponseEntity<String> patchResponse = patchRow(rowId, projectPlanId, "{\"title\": \"new title\"}");
 		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		ResponseEntity<String> getResponse = getAllRows(projectPlanId);
 		String expectedResult = String.format("""
 				[
 					{
@@ -119,7 +118,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 	@Test
 	@SneakyThrows
 	void canChangeSizeAndPositionOfRowsTasksWithAPATCHRequest() throws JSONException {
-		ResponseEntity<String> postResponse = postNewRow(String.format("""
+		ResponseEntity<String> postResponse = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "original title"
@@ -146,7 +145,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				""", rowId));
 		Long task2Id = getTaskIdFromPostResponse(task2Response);
 
-		ResponseEntity<String> patchResponse = patchRow(rowId,String.format("""
+		ResponseEntity<String> patchResponse = patchRow(rowId,projectPlanId, String.format("""
     		{
 				"tasks": [
 					{
@@ -164,7 +163,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
     	""", task1Id, task2Id));
 		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		ResponseEntity<String> getResponse = getAllRows(projectPlanId);
 		String expectedResult = String.format("""
 				[
 					{
@@ -194,14 +193,9 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
-	private Long getRowIdFromPostResponse(ResponseEntity<String> postResponse) {
-		JsonNode responseNode = getRootJsonNode(postResponse);
-		return responseNode.get("id").asLong();
-	}
-
 	@Test
 	void PUTRequestsAreNotAllowed() {
-		ResponseEntity<String> postResponse = postNewRow(String.format("""
+		ResponseEntity<String> postResponse = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "original title"
@@ -216,13 +210,13 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 					"tasks": []
 				}
 				""", rowId, projectPlanId);
-		ResponseEntity<String> patchResponse = makePUTRequest(putRequestBody, "/rows/" + rowId);
+		ResponseEntity<String> patchResponse = makePUTRequest(putRequestBody, String.format("/api/v1/project-plans/%d/rows/%d", projectPlanId, rowId));
 		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 	}
 
 	@Test
 	void addingATaskToARowViaTaskAPIWillResultInItBeingReturnedWithAGet() throws Exception {
-		ResponseEntity<String> rowResponse = postNewRow(String.format("""
+		ResponseEntity<String> rowResponse = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "something awesome"
@@ -232,7 +226,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		ResponseEntity<String> taskResponse = postNewTask(rowId, "{\"rowId\": " + rowId + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(taskResponse);
 
-		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		ResponseEntity<String> getResponse = getAllRows(projectPlanId);
 		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		String expectedResult = String.format("""
@@ -258,12 +252,12 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void movingATaskAwayFromARowViaTaskAPIWillResultInItNoLongerBeingInTheTaskList() throws Exception {
-		ResponseEntity<String> rowResponse1 = postNewRow(String.format("""
+		ResponseEntity<String> rowResponse1 = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "something awesome"
   			}""", projectPlanId));
-		ResponseEntity<String> rowResponse2 = postNewRow(String.format("""
+		ResponseEntity<String> rowResponse2 = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "something that is fine"
@@ -274,7 +268,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		ResponseEntity<String> taskResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(taskResponse);
 
-		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		ResponseEntity<String> getResponse = getAllRows(projectPlanId);
 		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		String expectedResult = String.format("""
@@ -308,7 +302,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		makePUTRequest(jsonTaskToUpdate, "/rows/" + rowId1 + "/tasks/" + taskId);
 
 
-		ResponseEntity<String> updatedGetResponse = makeGETRequest("/rows");
+		ResponseEntity<String> updatedGetResponse = getAllRows(projectPlanId);
 		assertThat(updatedGetResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		String newExpectedResults = String.format("""
@@ -340,14 +334,14 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void canDeleteARowAndGetDeletedRowInTheResponse() throws Exception {
-		ResponseEntity<String> postResponse = postNewRow(String.format("""
+		ResponseEntity<String> postResponse = postNewRow(projectPlanId, String.format("""
 			{
   				"projectPlanId": %d,
   				"title": "original title"
   			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(postResponse);
 
-		ResponseEntity<String> deleteResponse = makeDELETERequest("/rows/" + rowId);
+		ResponseEntity<String> deleteResponse = deleteRow(rowId, projectPlanId);
 
 		assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 		String expectedResponse = String.format("""
@@ -361,21 +355,53 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		JSONAssert.assertEquals(expectedResponse, deleteResponse.getBody(), JSONCompareMode.STRICT);
 
 		// row has been deleted - and does not show up in get request
-		ResponseEntity<String> getResponse = makeGETRequest("/rows");
+		ResponseEntity<String> getResponse = getAllRows(projectPlanId);
 		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 		JSONAssert.assertEquals("[]", getResponse.getBody(), JSONCompareMode.STRICT);
 	}
 
-	private ResponseEntity<String> postNewRow(String taskJsonString) {
-		ResponseEntity<String> response = makePOSTRequest(taskJsonString, "/rows");
+	private ResponseEntity<String> postNewRow(Long projectPlanId, String taskJsonString) {
+		String path = buildPostUrlPath(projectPlanId);
+		ResponseEntity<String> response = makePOSTRequest(taskJsonString, path);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		return response;
 	}
 
-	private ResponseEntity<String> patchRow(Long rowId, String rowPatchJsonString) {
-		ResponseEntity<String> response = makePATCHRequest(rowPatchJsonString, "/rows/" + rowId);
+	private ResponseEntity<String> getAllRows(Long projectPlanId) {
+		String path = buildGetUrlPath(projectPlanId);
+		return makeGETRequest(path);
+	}
+
+	private ResponseEntity<String> patchRow(Long rowId, Long projectPlanId, String rowPatchJsonString) {
+		String path = buildPatchUrlPath(rowId, projectPlanId);
+		ResponseEntity<String> response = makePATCHRequest(rowPatchJsonString, path);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		return response;
 	}
 
+	private ResponseEntity<String> deleteRow(Long rowId, Long projectPlanId) {
+		String path = buildDeleteUrlPath(rowId, projectPlanId);
+		return makeDELETERequest(path);
+	}
+
+	private static String buildGetUrlPath(Long projectPlanId) {
+		return String.format("/api/v1/project-plans/%d/rows", projectPlanId);
+	}
+
+	private static String buildPostUrlPath(Long projectPlanId) {
+		return buildGetUrlPath(projectPlanId);
+	}
+
+	private static String buildPatchUrlPath(Long rowId, Long projectPlanId) {
+		return String.format("/api/v1/project-plans/%d/rows/%d", projectPlanId, rowId);
+	}
+
+	private static String buildDeleteUrlPath(Long rowId, Long projectPlanId) {
+		return buildPatchUrlPath(rowId, projectPlanId);
+	}
+
+	private Long getRowIdFromPostResponse(ResponseEntity<String> postResponse) {
+		JsonNode responseNode = getRootJsonNode(postResponse);
+		return responseNode.get("id").asLong();
+	}
 }

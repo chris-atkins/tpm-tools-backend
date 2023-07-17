@@ -16,20 +16,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+@RequestMapping("/api/v1/project-plans/{projectPlanId}/rows")
 public class RowAPI {
 
 	@Autowired
 	private RowService rowService;
 
-	@GetMapping(value = "/rows")
+	@GetMapping
 	public List<APIRow> getAllRows() {
 		return rowService.getAllRows().stream()
 				.map(APIRow::fromDomainObject)
 				.collect(Collectors.toList());
 	}
 
-	@PostMapping(value = "/rows", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public APIRow postNewRow(@RequestBody APIRow row) {
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public APIRow postNewRow(@PathVariable Long projectPlanId, @RequestBody APIRow row) {
 		validatePostedRowThrowingExceptions(row);
 
 		return APIRow.fromDomainObject(rowService.saveNewRow(row.toDomainObject()));
@@ -45,7 +46,7 @@ public class RowAPI {
 		}
 	}
 
-	@PatchMapping(value = "/rows/{rowId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PatchMapping(value = "/{rowId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public APIRow patchRow(@PathVariable Long rowId, @RequestBody APIRowPatch rowPatch) {
 		RowPatchTemplate row = rowPatch.toDomainObject(rowId);
 		try {
@@ -57,7 +58,7 @@ public class RowAPI {
 		}
 	}
 
-	@DeleteMapping(value="/rows/{rowId}", produces = MediaType.APPLICATION_JSON_VALUE)
+	@DeleteMapping(value="/{rowId}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public APIRow deleteRow(@PathVariable Long rowId) {
 		try {
 			return APIRow.fromDomainObject(rowService.deleteEmptyRowById(rowId));
