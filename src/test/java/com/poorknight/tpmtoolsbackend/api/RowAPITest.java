@@ -103,6 +103,17 @@ public class RowAPITest {
 	}
 
 	@Test
+	void postNewRowErrorsIfProjectPlanPathMismatchesProjectPlanIdInBody() {
+		try {
+			api.postNewRow(12345L, new APIRow(null, 33L, "ohai", List.of(new APITask(1L, 2L, "hi", 3, 4))));
+			fail("Expecting exception");
+		} catch (ResponseStatusException e) {
+			assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+			assertThat(e.getMessage()).contains("The projectPlanId in the row object must match the project-plans id passed in the request path.");
+		}
+	}
+
+	@Test
 	void postNewRowDoesNotAcceptARowId() {
 		try {
 			api.postNewRow(33L, new APIRow(1L, 33L,"ohai", null));

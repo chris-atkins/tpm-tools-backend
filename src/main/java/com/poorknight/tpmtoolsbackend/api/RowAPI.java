@@ -31,12 +31,16 @@ public class RowAPI {
 
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public APIRow postNewRow(@PathVariable Long projectPlanId, @RequestBody APIRow row) {
-		validatePostedRowThrowingExceptions(row);
+		validatePostedRowThrowingExceptions(projectPlanId, row);
 
 		return APIRow.fromDomainObject(rowService.saveNewRow(row.toDomainObject()));
 	}
 
-	private void validatePostedRowThrowingExceptions(APIRow row) {
+	private void validatePostedRowThrowingExceptions(Long projectPlanId, APIRow row) {
+		if (!projectPlanId.equals(row.getProjectPlanId())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The projectPlanId in the row object must match the project-plans id passed in the request path.");
+		}
+
 		if (row.getId() != null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Do not include an id when saving a new row.");
 		}
