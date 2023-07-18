@@ -1,11 +1,11 @@
-FROM gradle:jdk18-alpine as build
+FROM --platform=linux/arm64/v8 gradle:jdk18 as build
 
 WORKDIR /tpm-tools-backend
 COPY . ./
 RUN gradle build -x test
 
 
-FROM openjdk:18-jdk-alpine as runner
+FROM --platform=linux/amd64 openjdk:18-jdk-alpine as runner
 COPY --from=build /tpm-tools-backend/build/libs/tpm-tools-backend-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
