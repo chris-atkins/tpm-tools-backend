@@ -13,6 +13,6 @@ sleep 60
 
 
 
-docker build . -t tpm-tools-backend-image
+docker build . -t tpm-tools-backend-image -f m2Dockerfile
 
 docker run -d --restart=on-failure:5 -p 8080:8080 -e DB_CONNECTION_STRING=jdbc:mysql://tpm-mysql:3306/tpm-tools -e DB_USER=local-user -e DB_PASSWORD=pwd2 --network tpm-tools-network --name tpm-tools-backend tpm-tools-backend-image
