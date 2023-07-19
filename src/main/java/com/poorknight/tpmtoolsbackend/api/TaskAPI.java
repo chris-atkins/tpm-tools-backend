@@ -1,6 +1,7 @@
 package com.poorknight.tpmtoolsbackend.api;
 
 import com.poorknight.tpmtoolsbackend.api.entity.APITask;
+import com.poorknight.tpmtoolsbackend.api.entity.APITaskPatch;
 import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
 import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,20 +68,18 @@ public class TaskAPI {
 	}
 
 
-	@PutMapping(value = "/rows/{rowId}/tasks/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public APITask putTask(@PathVariable Long rowId, @PathVariable long taskId, @RequestBody APITask taskBody) {
-		validateTaskToPutThrowingExceptions(taskId, taskBody);
+	@PatchMapping(value = "/rows/{rowId}/tasks/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public APITask patchTask(@PathVariable long taskId, @RequestBody APITaskPatch patchBody) {
+		validateTaskToPatchThrowingExceptions(taskId, patchBody);
 
 		try {
-			checkTaskIdBelongsToRowIDInURLThrowingException(rowId, taskId);
-
-			Task taskToUpdate = taskBody.toDomainObject();
-			Task updatedTask = taskService.updateTask(taskToUpdate);
+			Task taskToUpdate = patchBody.toDomainObject();
+			Task updatedTask = taskService.patchTask(taskToUpdate);
 			return APITask.fromDomainObject(updatedTask);
 
 		} catch (TaskService.TaskNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-					"Cannot PUT the task.  No task exists with the passed id: " + taskId);
+					"Cannot PATCH the task.  No task exists with the passed id: " + taskId);
 
 		} catch (ResponseStatusException e) {
 			throw e;
@@ -91,30 +90,18 @@ public class TaskAPI {
 		}
 	}
 
-	private void validateTaskToPutThrowingExceptions(Long taskId, APITask task) {
-		if (task.getId() == null) {
+	private void validateTaskToPatchThrowingExceptions(Long taskId, APITaskPatch taskPatch) {
+		if (taskPatch.getId() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"When PUTing a Task, make sure to provide an id in the request body.");
+					"When PATCHing a Task, make sure to provide an id in the request body.");
 		}
-		if (task.getRowId() == null) {
+		if (!taskPatch.getId().equals(taskId)) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"When PUTing a Task, make sure to provide a rowId.");
+					"When PATCHing a Task, the url id and request body id must match.");
 		}
-		if (task.getId() != taskId) {
+		if (taskPatch.getTitle() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"When PUTing a Task, the url id and request body id must match.");
-		}
-		if (task.getTitle() == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"When PUTing a Task, make sure to provide a title in the request body.  An empty string is valid.");
-		}
-		if (task.getSize() == null || task.getSize() < 1) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"When PUTing a Task, make sure to provide a positive integer for size.");
-		}
-		if (task.getPosition() == null || task.getPosition() < 1) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"When PUTing a Task, make sure to provide a positive integer for position.");
+					"When PATCHing a Task, make sure to provide a title in the request body.  An empty string is valid.");
 		}
 	}
 

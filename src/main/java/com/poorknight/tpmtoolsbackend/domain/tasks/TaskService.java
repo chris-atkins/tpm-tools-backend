@@ -39,32 +39,30 @@ public class TaskService {
 		}
 	}
 
-	public Task updateTask(Task taskToUpdate) {
-		throwExceptionIfInvalidTaskForUpdating(taskToUpdate);
+	public Task patchTask(Task taskUpdateTemplate) {
+		Task taskToUpdate = buildTaskToUpdateFromTemplateThrowingExceptionIfInvalid(taskUpdateTemplate);
 		return repository.save(taskToUpdate);
 	}
 
-	private void throwExceptionIfInvalidTaskForUpdating(Task taskToUpdate) {
-		if (taskToUpdate.getId() == null) {
+	private Task buildTaskToUpdateFromTemplateThrowingExceptionIfInvalid(Task taskUpdateTemplate) {
+		if (taskUpdateTemplate.getId() == null) {
 			throw new RuntimeException("Must specify an ID to update a Task - that is how we know what Task to update! Try the saveNewTask method instead :)");
 		}
-		if (taskToUpdate.getRowId() == null) {
-			throw new RuntimeException("Must specify a rowId when updating a Task.");
-		}
-		if (taskToUpdate.getTitle() == null) {
-			throw new RuntimeException("Must specify a title while updating a Task. A full task must be given, including fields that are not changing.");
-		}
-		if (taskToUpdate.getSize() == null) {
-			throw new RuntimeException("Must specify a size while updating a Task. A full task must be given, including fields that are not changing.");
-		}
-		if (taskToUpdate.getPosition() == null) {
-			throw new RuntimeException("Must specify a position while updating a Task. A full task must be given, including fields that are not changing.");
+
+		Optional<Task> task = repository.findById(taskUpdateTemplate.getId());
+		if (task.isEmpty()) {
+			throw new TaskNotFoundException("Cannot update task with id " + taskUpdateTemplate.getId() + ". It does not exist.");
 		}
 
-		Optional<Task> task = repository.findById(taskToUpdate.getId());
-		if (task.isEmpty()) {
-			throw new TaskNotFoundException("Cannot update task with id " + taskToUpdate.getId() + ". It does not exist.");
-		}
+		return mergeTaskAndTemplateForUpdate(task.get(), taskUpdateTemplate);
+	}
+
+	private Task mergeTaskAndTemplateForUpdate(Task task, Task taskUpdateTemplate) {
+		Long rowId = taskUpdateTemplate.getRowId() == null ? task.getRowId() : taskUpdateTemplate.getRowId();
+		String title = taskUpdateTemplate.getTitle() == null ? task.getTitle() : taskUpdateTemplate.getTitle();
+		Integer size = taskUpdateTemplate.getSize() == null ? task.getSize() : taskUpdateTemplate.getSize();
+		Integer position = taskUpdateTemplate.getPosition() == null ? task.getPosition() : taskUpdateTemplate.getPosition();
+		return new Task(task.getId(), rowId, title, size, position);
 	}
 
 	public List<Task> getAllTasksForRow(Long rowId) {

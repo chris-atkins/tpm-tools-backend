@@ -81,7 +81,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	}
 
 	@Test
-	void putTaskCanChangeRowIdAndTitleAndSizeAndPositionOnAnExistingTask() throws Exception {
+	void patchTaskCanChangeTitleOnAnExistingTask() throws Exception {
 		postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}");
 
 		ResponseEntity<String> getResponse = makeGETRequest("/rows/" + rowId1 + "/tasks");
@@ -93,76 +93,90 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 		Long taskId = taskList.get(0).get("id").asLong();
 
-		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"rowId\": " + rowId2 + ", \"title\": \"a fine title\", \"size\": 8, \"position\": 5}";
-		ResponseEntity<String> putResponse = makePUTRequest(jsonTaskToUpdate, "/rows/" + rowId1 + "/tasks/" + taskId);
+		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"title\": \"a fine title\"}";
+		ResponseEntity<String> patchResponse = makePATCHRequest(jsonTaskToUpdate, "/rows/" + rowId1 + "/tasks/" + taskId);
 
 		String expectedResult = String.format("""
 				{
 					"id": %d,
 					"rowId": %d,
 					"title": "a fine title",
-					"size": 8,
-					"position": 5 
+					"size": 5,
+					"position": 3
 				}
-				""", taskId, rowId2);
-		JSONAssert.assertEquals(expectedResult, putResponse.getBody(), JSONCompareMode.STRICT);
+				""", taskId, rowId1);
+		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		JSONAssert.assertEquals(expectedResult, patchResponse.getBody(), JSONCompareMode.STRICT);
 
-		getResponse = makeGETRequest("/rows/" + rowId2 + "/tasks");
+		getResponse = makeGETRequest("/rows/" + rowId1 + "/tasks");
 		taskList = buildTaskListFromGetResponse(getResponse);
 		assertThat(taskList.size()).isEqualTo(1);
-		assertThat(taskList.get(0).get("rowId").asLong()).isEqualTo(rowId2);
+		assertThat(taskList.get(0).get("rowId").asLong()).isEqualTo(rowId1);
 		assertThat(taskList.get(0).get("title").asText()).isEqualTo("a fine title");
-		assertThat(taskList.get(0).get("size").asInt()).isEqualTo(8);
-		assertThat(taskList.get(0).get("position").asInt()).isEqualTo(5);
+		assertThat(taskList.get(0).get("size").asInt()).isEqualTo(5);
+		assertThat(taskList.get(0).get("position").asInt()).isEqualTo(3);
 	}
 
 	@Test
-	public void putTaskDoesNotAcceptExtraFields() throws Exception {
+	public void patchTaskDoesNotAcceptExtraFields() throws Exception {
 		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
-				{"id": %d, "rowId": %d, "someExtraField": "hi", "title": "the best title", "size": 8}
+				{"id": %d, "someExtraField": "hi", "title": "the best title"}
 				""", taskId, rowId1);
 
-		ResponseEntity<String> response = makePUTRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("Unrecognized field \\\"someExtraField\\\"")).isGreaterThan(0);
 	}
 
 	@Test
-	public void putTaskDoesNotAcceptBodyWithNoId() throws Exception {
+	public void patchTaskDoesNotAcceptBodyWithNoId() throws Exception {
 		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
-				{"rowId": %d, "title": "the best title", "size": 8}
+				{"title": "the best title"}
 				""", rowId1);
 
-		ResponseEntity<String> response = makePUTRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("provide an id")).isGreaterThan(0);
 	}
 
 	@Test
-	public void putTaskDoesNotAcceptBodyWithMismatchedIdComparedToUrl() throws Exception {
+	public void patchTaskDoesNotAcceptBodyWithMismatchedIdComparedToUrl() throws Exception {
 		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
-				{"id": %d, "rowId": %d, "title": "the best title", "size": 8}
+				{"id": %d, "title": "the best title"}
 				""", (taskId + 1), rowId1);
 
-		ResponseEntity<String> response = makePUTRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("id must match")).isGreaterThan(0);
 	}
 
 	@Test
-	public void putTaskAcceptsBodyWithNoChanges() throws Exception {
+	public void patchTaskAcceptsTitleWithNoChanges() throws Exception {
+		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
+		Long taskId = getTaskIdFromPostResponse(postResponse);
+
+		String body = String.format("""
+				{"id": %d, "title": "first title"}
+				""", taskId, rowId1);
+
+		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+	}
+
+	@Test
+	void putIsNotAllowedAndReturns405() throws Exception {
 		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
@@ -171,7 +185,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 				""", taskId, rowId1);
 
 		ResponseEntity<String> response = makePUTRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
-		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 	}
 
 	@Test

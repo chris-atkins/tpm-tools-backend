@@ -80,7 +80,7 @@ public class RowService {
 				taskBeingUpdated.setPosition(tastPatchTemplate.getPosition());
 			}
 
-			taskService.updateTask(taskBeingUpdated);
+			taskService.patchTask(taskBeingUpdated);
 		}
 	}
 }

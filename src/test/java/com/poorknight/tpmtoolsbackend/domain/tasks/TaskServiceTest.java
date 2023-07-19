@@ -182,10 +182,11 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	}
 
 	@Test
-	void canUpdateAnExistingTask() throws Exception {
+	void patchTaskUpdatesAnExistingTask() throws Exception {
 		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
 
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
+		Row row2 = rowService.saveNewRow(new Row(projectPlanId, "test yet another row"));
 		taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 1));
 
 		List<Task> allTasks = taskService.getAllTasksForRow(row.getId());
@@ -193,24 +194,33 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 		assertThat(allTasks.get(0).getTitle()).isEqualTo("One more thing");
 		assertThat(allTasks.get(0).getSize()).isEqualTo(1);
 
-		Task taskToUpdate = allTasks.get(0);
-		taskToUpdate.setTitle("One more thing! :)");
-		taskToUpdate.setSize(5);
-		taskService.updateTask(taskToUpdate);
+		Long taskId = allTasks.get(0).getId();
+		Task taskToUpdate = new Task(taskId, row2.getId(), "One more thing! :)", 3, 5);
+		taskService.patchTask(taskToUpdate);
 
-		Task foundTask = findTaskWithTitle("One more thing! :)");
+		assertExactlyOneTaskExistsWithValues(taskId, row2.getId(), "One more thing! :)", 3, 5);
+	}
+
+	private void assertExactlyOneTaskExistsWithValues(Long taskId, Long rowId, String title, Integer size, Integer position) throws Exception {
+		Task foundTask = findTaskWithTitle(title);
+		
 		assertThat(foundTask).isNotNull();
-		assertThat(foundTask.getSize()).isEqualTo(5);
-		assertThat(findTotalNumberOfTasks()).isEqualTo(1);
+		assertThat(foundTask.getId()).isEqualTo(taskId);
+		assertThat(foundTask.getRowId()).isEqualTo(rowId);
+		assertThat(foundTask.getTitle()).isEqualTo(title);
+		assertThat(foundTask.getSize()).isEqualTo(size);
+		assertThat(foundTask.getPosition()).isEqualTo(position);
+
+		assertThat(findTotalNumberOfTasks()).isEqualTo(1L);
 	}
 
 	@Test
-	void updateTaskMustHaveAnIdPopulated() throws Exception {
+	void patchTaskMustHaveAnIdPopulated() throws Exception {
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task task = new Task(row.getId(), "Work to do!", 1, 2);
 
 		try {
-			taskService.updateTask(task);
+			taskService.patchTask(task);
 			Assertions.fail("Expecting an exception");
 		} catch (RuntimeException e) {
 			assertThat(e.getMessage()).isEqualTo("Must specify an ID to update a Task - that is how we know what Task to update! Try the saveNewTask method instead :)");
@@ -219,88 +229,104 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 	}
 
 	@Test
-	void updateTaskMustHaveARowIdPopulated() throws Exception {
-		Task task = new Task(1L, null, "Work to do!", 1, 4);
+	void patchTaskKeepsOriginalRowIdIfNullIsPassed() throws Exception {
+		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
 
-		try {
-			taskService.updateTask(task);
-			Assertions.fail("Expecting an exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).isEqualTo("Must specify a rowId when updating a Task.");
-			assertThat(findTotalNumberOfTasks()).isEqualTo(0);
-		}
-	}
-
-	@Test
-	void updateTaskMustHaveASizePopulated() throws Exception {
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
-		Task task = new Task(1L, row.getId(), "Work to do!", null, 3);
+		taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 1));
 
-		try {
-			taskService.updateTask(task);
-			Assertions.fail("Expecting an exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).isEqualTo("Must specify a size while updating a Task. A full task must be given, including fields that are not changing.");
-			assertThat(findTotalNumberOfTasks()).isEqualTo(0);
-		}
+		List<Task> allTasks = taskService.getAllTasksForRow(row.getId());
+		Long taskId = allTasks.get(0).getId();
+		
+		Task task = new Task(taskId, null, "Work to do!", 3, 4);
+
+		taskService.patchTask(task);
+		
+		assertExactlyOneTaskExistsWithValues(taskId, row.getId(), "Work to do!", 3, 4);
 	}
 
 	@Test
-	void updateTaskMustHaveAPositionPopulated() throws Exception {
+	void patchTaskKeepsOriginalSizeIfNullIsPassed() throws Exception {
+		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
+
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
-		Task task = new Task(1L, row.getId(), "Work to do!", 3, null);
+		Row row2 = rowService.saveNewRow(new Row(projectPlanId, "2nd row"));
+		taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 1));
 
-		try {
-			taskService.updateTask(task);
-			Assertions.fail("Expecting an exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).isEqualTo("Must specify a position while updating a Task. A full task must be given, including fields that are not changing.");
-			assertThat(findTotalNumberOfTasks()).isEqualTo(0);
-		}
+		List<Task> allTasks = taskService.getAllTasksForRow(row.getId());
+		Long taskId = allTasks.get(0).getId();
+
+		Task task = new Task(taskId, row2.getId(), "Work to do!", null, 5);
+
+		taskService.patchTask(task);
+
+		assertExactlyOneTaskExistsWithValues(taskId, row2.getId(), "Work to do!", 1, 5);
 	}
 
 	@Test
-	void updateTaskDoesNotAllowNullTitle() throws Exception {
+	void patchTaskKeepsOriginalPositionIfNullIsPassed() throws Exception {
+		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
+
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
-		Task task = new Task(1L, row.getId(), null, 4, 34);
+		Row row2 = rowService.saveNewRow(new Row(projectPlanId, "2nd row"));
+		taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 1));
 
-		try {
-			taskService.updateTask(task);
-			Assertions.fail("Expecting an exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).isEqualTo("Must specify a title while updating a Task. A full task must be given, including fields that are not changing.");
-			assertThat(findTotalNumberOfTasks()).isEqualTo(0);
-		}
+		List<Task> allTasks = taskService.getAllTasksForRow(row.getId());
+		Long taskId = allTasks.get(0).getId();
+
+		Task task = new Task(taskId, row2.getId(), "Work to do!", 8, null);
+
+		taskService.patchTask(task);
+
+		assertExactlyOneTaskExistsWithValues(taskId, row2.getId(), "Work to do!", 8, 1);
 	}
 
 	@Test
-	void updatingATaskToEmptyStringIsOk() throws Exception {
+	void patchTaskKeepsOriginalTitleIfNullIsPassed() throws Exception {
+		assertThat(findTotalNumberOfTasks()).isEqualTo(0);
+
+		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
+		Row row2 = rowService.saveNewRow(new Row(projectPlanId, "2nd row"));
+		taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 1));
+
+		List<Task> allTasks = taskService.getAllTasksForRow(row.getId());
+		Long taskId = allTasks.get(0).getId();
+
+		Task task = new Task(taskId, row2.getId(), null, 8, 9);
+
+		taskService.patchTask(task);
+
+		assertExactlyOneTaskExistsWithValues(taskId, row2.getId(), "One more thing", 8, 9);
+	}
+
+	@Test
+	void patchTaskTitleToEmptyStringIsOk() throws Exception {
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = taskService.saveNewTask(new Task(row.getId(), "One more thing", 1, 8));
 		Task task = new Task(savedTask.getId(), row.getId(), "", 1, 8);
 
-		Task updatedTask = taskService.updateTask(task);
+		Task updatedTask = taskService.patchTask(task);
 		assertThat(updatedTask.getTitle()).isEmpty();
 	}
 
 	@Test
-	void updateTaskReturnsTheSavedTaskWithSameId() throws Exception {
+	void patchTaskReturnsTheSavedTaskWithSameId() throws Exception {
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = taskService.saveNewTask(new Task(row.getId(), "Work to do!", 1, 1));
 
 		savedTask.setTitle("new title");
-		Task updatedTask = taskService.updateTask(savedTask);
+		Task updatedTask = taskService.patchTask(savedTask);
 
 		assertThat(updatedTask.getId()).isEqualTo(savedTask.getId());
 	}
 
 	@Test
-	void updateTaskThrowsExceptionIfIdDoesNotExist() throws Exception {
+	void patchTaskThrowsExceptionIfIdDoesNotExist() throws Exception {
 		Row row = rowService.saveNewRow(new Row(projectPlanId, "test row"));
 		Task savedTask = new Task(88L, row.getId(), "Work to do!", 1, 5);
 
 		try {
-			Task updatedTask = taskService.updateTask(savedTask);
+			taskService.patchTask(savedTask);
 			fail("expecting exception");
 		} catch (TaskService.TaskNotFoundException e) {
 			assertThat(e.getMessage()).contains("Cannot update task with id 88. It does not exist.");
@@ -399,6 +425,7 @@ class TaskServiceTest extends BaseUnitTestWithDatabase {
 			if (titleToSearchFor.equals(resultSet.getString("TITLE"))) {
 				task = new Task(
 						resultSet.getLong("ID"),
+						resultSet.getLong("P1_ROW_FK"),
 						resultSet.getString("TITLE"),
 						resultSet.getInt("SIZE"),
 						resultSet.getInt("POSITION"));
