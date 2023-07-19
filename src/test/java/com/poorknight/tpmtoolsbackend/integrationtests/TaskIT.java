@@ -1,6 +1,7 @@
 package com.poorknight.tpmtoolsbackend.integrationtests;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -17,13 +18,14 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	private Long rowId1;
 	private Long rowId2;
+	private Long projectPlanId;
 
 	@Override
 	@BeforeEach
 	void setUp() {
 		super.setUp();
 		this.deleteAllTasksAndRowsAndProjectPlans();
-		Long projectPlanId = createProjectPlanWithSQLOnly("THE project plan");
+		projectPlanId = createProjectPlanWithSQLOnly("THE project plan");
 		rowId1 = this.createRowWithSQLOnly(projectPlanId, "Row 1");
 		rowId2 = this.createRowWithSQLOnly(projectPlanId, "Row 2");
 	}
@@ -31,7 +33,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	@Test
 	public void testTaskResponseHasIdAndRowIdAndTitleAndSizeAndPositionOnSuccessfulPOST() throws Exception {
 		String body = "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}";
-		ResponseEntity<String> response = makePOSTRequest(body, "/rows/" + rowId1 + "/tasks");
+		ResponseEntity<String> response = makePOSTRequest(body, buildPOSTPath(rowId1));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -64,7 +66,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	public void errorsIfAnIdIsProvidedWhenPOSTingTask() throws Exception {
 		String body = "{\"id\": 55, \"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}";
 
-		ResponseEntity<String> response = makePOSTRequest(body, "/rows/" + rowId1 + "/tasks");
+		ResponseEntity<String> response = makePOSTRequest(body, buildPOSTPath(rowId1));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("do not provide an id")).isGreaterThan(0);
@@ -74,7 +76,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 	public void postTaskDoesNotAcceptExtraFields() throws Exception {
 		String body = "{\"someExtraField\": \"hi\", \"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}";
 
-		ResponseEntity<String> response =makePOSTRequest(body, "/rows/" + rowId1 + "/tasks");
+		ResponseEntity<String> response =makePOSTRequest(body, buildPOSTPath(rowId1));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("Unrecognized field \\\"someExtraField\\\"")).isGreaterThan(0);
@@ -82,9 +84,9 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void patchTaskCanChangeTitleOnAnExistingTask() throws Exception {
-		postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}");
+		postNewTask(projectPlanId, rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}");
 
-		ResponseEntity<String> getResponse = makeGETRequest("/rows/" + rowId1 + "/tasks");
+		ResponseEntity<String> getResponse = makeGETRequest(buildGETAllPath(rowId1));
 		List<JsonNode> taskList = buildTaskListFromGetResponse(getResponse);
 		assertThat(taskList.size()).isEqualTo(1);
 		assertThat(taskList.get(0).get("title").asText()).isEqualTo("the best title");
@@ -94,7 +96,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		Long taskId = taskList.get(0).get("id").asLong();
 
 		String jsonTaskToUpdate = "{\"id\": " + taskId + ", \"title\": \"a fine title\"}";
-		ResponseEntity<String> patchResponse = makePATCHRequest(jsonTaskToUpdate, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> patchResponse = makePATCHRequest(jsonTaskToUpdate, buildPATCHPath(rowId1, taskId));
 
 		String expectedResult = String.format("""
 				{
@@ -108,7 +110,7 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 		JSONAssert.assertEquals(expectedResult, patchResponse.getBody(), JSONCompareMode.STRICT);
 
-		getResponse = makeGETRequest("/rows/" + rowId1 + "/tasks");
+		getResponse = makeGETRequest(buildGETAllPath(rowId1));
 		taskList = buildTaskListFromGetResponse(getResponse);
 		assertThat(taskList.size()).isEqualTo(1);
 		assertThat(taskList.get(0).get("rowId").asLong()).isEqualTo(rowId1);
@@ -119,14 +121,14 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void patchTaskDoesNotAcceptExtraFields() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
+		ResponseEntity<String> postResponse = postNewTask(projectPlanId, rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
 				{"id": %d, "someExtraField": "hi", "title": "the best title"}
 				""", taskId, rowId1);
 
-		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePATCHRequest(body, buildPATCHPath(rowId1, taskId));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("Unrecognized field \\\"someExtraField\\\"")).isGreaterThan(0);
@@ -134,14 +136,14 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void patchTaskDoesNotAcceptBodyWithNoId() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
+		ResponseEntity<String> postResponse = postNewTask(projectPlanId, rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
 				{"title": "the best title"}
 				""", rowId1);
 
-		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePATCHRequest(body, buildPATCHPath(rowId1, taskId));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("provide an id")).isGreaterThan(0);
@@ -149,14 +151,14 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void patchTaskDoesNotAcceptBodyWithMismatchedIdComparedToUrl() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
+		ResponseEntity<String> postResponse = postNewTask(projectPlanId, rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
 				{"id": %d, "title": "the best title"}
 				""", (taskId + 1), rowId1);
 
-		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePATCHRequest(body, buildPATCHPath(rowId1, taskId));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 		assertThat(response.getBody().indexOf("id must match")).isGreaterThan(0);
@@ -164,38 +166,38 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	public void patchTaskAcceptsTitleWithNoChanges() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
+		ResponseEntity<String> postResponse = postNewTask(projectPlanId, rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
 				{"id": %d, "title": "first title"}
 				""", taskId, rowId1);
 
-		ResponseEntity<String> response = makePATCHRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePATCHRequest(body, buildPATCHPath(rowId1, taskId));
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 	}
 
 	@Test
 	void putIsNotAllowedAndReturns405() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
+		ResponseEntity<String> postResponse = postNewTask(projectPlanId, rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"first title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		String body = String.format("""
 				{"id": %d, "rowId": %d, "title": "first title", "size": 5, "position": 3}
 				""", taskId, rowId1);
 
-		ResponseEntity<String> response = makePUTRequest(body, "/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makePUTRequest(body, buildPATCHPath(rowId1, taskId));
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
 	}
 
 	@Test
 	void deleteTaskRemovesATask() throws Exception {
-		ResponseEntity<String> postResponse = postNewTask(rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"a title\", \"size\": 5, \"position\": 3}");
+		ResponseEntity<String> postResponse = postNewTask(projectPlanId, rowId1, "{\"rowId\": " + rowId1 + ", \"title\": \"a title\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(postResponse);
 
 		assertThat(findNumberOfTasksReturnedFromGetAll()).isEqualTo(1);
 
-		ResponseEntity<String> response = makeDELETERequest("/rows/" + rowId1 + "/tasks/" + taskId);
+		ResponseEntity<String> response = makeDELETERequest(buildDELETEPath(rowId1, taskId));
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(findNumberOfTasksReturnedFromGetAll()).isEqualTo(0);
@@ -203,12 +205,12 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void deleteTask404sIfNoTaskExistsWithPassedId() throws Exception {
-		ResponseEntity<String> response = makeDELETERequest("/rows/" + rowId1 + "/tasks/74");
+		ResponseEntity<String> response = makeDELETERequest(buildDELETEPath(rowId1, 74L));
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
 
 	private int findNumberOfTasksReturnedFromGetAll() throws Exception {
-		ResponseEntity<String> response = makeGETRequest("/rows/" + rowId1 + "/tasks");
+		ResponseEntity<String> response = makeGETRequest(buildGETAllPath(rowId1));
 		List<JsonNode> tasks = buildTaskListFromGetResponse(response);
 		return tasks.size();
 	}
@@ -222,11 +224,11 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 
 	@Test
 	void getAllTasksReturnsAListOfTasksThatHaveBeenSavedToARow() throws Exception {
-		postNewTask(rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}");
-		postNewTask(rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the second best title\", \"size\": 6, \"position\": 4}");
-		postNewTask(rowId2,"{\"rowId\": " + rowId2 + ", \"title\": \"the worst title\", \"size\": 7, \"position\": 5}");
+		postNewTask(projectPlanId, rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the best title\", \"size\": 5, \"position\": 3}");
+		postNewTask(projectPlanId, rowId1,"{\"rowId\": " + rowId1 + ", \"title\": \"the second best title\", \"size\": 6, \"position\": 4}");
+		postNewTask(projectPlanId, rowId2,"{\"rowId\": " + rowId2 + ", \"title\": \"the worst title\", \"size\": 7, \"position\": 5}");
 
-		ResponseEntity<String> response = makeGETRequest("/rows/" + rowId1 + "/tasks");
+		ResponseEntity<String> response = makeGETRequest(buildGETAllPath(rowId1));
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		JsonNode responseNode = getRootJsonNode(response);
@@ -265,5 +267,24 @@ public class TaskIT extends BaseIntegrationTestWithDatabase {
 		assertThat(fieldList.get(4).getKey()).isEqualTo("position");
 		assertThat(fieldList.get(4).getValue().asInt()).isEqualTo(position);
 		assertThat(fieldList.get(4).getValue().fields().hasNext()).isFalse();
+	}
+
+	@NotNull
+	private String buildPOSTPath(Long rowId) {
+		return "/api/v1/project-plans/" + projectPlanId + "/rows/" + rowId + "/tasks";
+	}
+	@NotNull
+	private String buildGETAllPath(Long rowId) {
+		return buildPOSTPath(rowId);
+	}
+
+	@NotNull
+	private String buildPATCHPath(Long rowId, Long taskId) {
+		return buildPOSTPath(rowId) + "/" + taskId;
+	}
+
+	@NotNull
+	private String buildDELETEPath(Long rowId, Long taskId) {
+		return buildPATCHPath(rowId, taskId);
 	}
 }

@@ -104,8 +104,8 @@ public class BaseIntegrationTestWithDatabase extends BaseTestWithDatabase {
 		}
 	}
 
-	ResponseEntity<String> postNewTask(Long rowId, String taskJsonString) {
-		ResponseEntity<String> response = makePOSTRequest(taskJsonString, "/rows/" + rowId + "/tasks");
+	ResponseEntity<String> postNewTask(Long projectPlanId, Long rowId, String taskJsonString) {
+		ResponseEntity<String> response = makePOSTRequest(taskJsonString, "/api/v1/project-plans/" + projectPlanId + "/rows/" + rowId + "/tasks");
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		return response;
 	}

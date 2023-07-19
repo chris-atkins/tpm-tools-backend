@@ -125,7 +125,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
   			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(postResponse);
 
-		ResponseEntity<String> task1Response = postNewTask(rowId, String.format("""
+		ResponseEntity<String> task1Response = postNewTask(projectPlanId, rowId, String.format("""
 				{
 					"rowId": %d,
 					"title": "task 1",
@@ -135,7 +135,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				""", rowId));
 		Long task1Id = getTaskIdFromPostResponse(task1Response);
 
-		ResponseEntity<String> task2Response = postNewTask(rowId, String.format("""
+		ResponseEntity<String> task2Response = postNewTask(projectPlanId, rowId, String.format("""
 				{
 					"rowId": %d,
 					"title": "task 2",
@@ -223,7 +223,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
   			}""", projectPlanId));
 		Long rowId = getRowIdFromPostResponse(rowResponse);
 
-		ResponseEntity<String> taskResponse = postNewTask(rowId, "{\"rowId\": " + rowId + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}");
+		ResponseEntity<String> taskResponse = postNewTask(projectPlanId, rowId, "{\"rowId\": " + rowId + ", \"title\": \"a task!\", \"size\": 5, \"position\": 3}");
 		Long taskId = getTaskIdFromPostResponse(taskResponse);
 
 		ResponseEntity<String> getResponse = getAllRows(projectPlanId);

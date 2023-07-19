@@ -14,12 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/v1/project-plans/{projectPlanId}/rows/{rowId}/tasks")
 public class TaskAPI {
 
 	@Autowired
 	private TaskService taskService;
 
-	@GetMapping(value = "/rows/{rowId}/tasks")
+	@GetMapping
 	public List<APITask> getTasks(@PathVariable Long rowId) {
 		List<Task> allTasks = taskService.getAllTasksForRow(rowId);
 
@@ -30,7 +31,7 @@ public class TaskAPI {
 		return responseTasks;
 	}
 
-	@PostMapping(value = "/rows/{rowId}/tasks", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public APITask postTask(@PathVariable Long rowId, @RequestBody APITask task) {
 		validateTaskToPostThrowingExceptions(rowId, task);
 
@@ -68,7 +69,7 @@ public class TaskAPI {
 	}
 
 
-	@PatchMapping(value = "/rows/{rowId}/tasks/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	@PatchMapping(value = "/{taskId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public APITask patchTask(@PathVariable long taskId, @RequestBody APITaskPatch patchBody) {
 		validateTaskToPatchThrowingExceptions(taskId, patchBody);
 
@@ -106,7 +107,7 @@ public class TaskAPI {
 	}
 
 
-	@DeleteMapping(value = "/rows/{rowId}/tasks/{taskId}")
+	@DeleteMapping(value = "/{taskId}")
 	public APITask deleteTask(@PathVariable Long rowId, @PathVariable Long taskId) {
 		try {
 			checkTaskIdBelongsToRowIDInURLThrowingException(rowId, taskId);
