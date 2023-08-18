@@ -167,4 +167,25 @@ class ProjectConsistencyValidatorTest {
 			assertThat(e.getMessage()).contains("The proposed change results in more than one task occupying the same space.");
 		}
 	}
+
+	@Test
+	void throwsExceptionWhenTaskDoesNotExist() {
+		Row row = new Row(1L, 55L, "row title", List.of(
+				new Task(10L, 1L, "task 1", 1, 0),
+				new Task(11L, 1L, "task 2", 1, 1),
+				new Task(12L, 1L, "task 3", 1, 2)
+		));
+
+		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
+				new RowPatchTemplateTask(13L, 1, null)
+		));
+
+		try {
+			new ProjectConsistencyValidator().validateRowChangeSetThrowingExceptions(row, rowPatchTemplate);
+			fail("expecting exception");
+		} catch (RuntimeException e) {
+			assertThat(e.getClass()).isEqualTo(RowUpdateConsistencyException.class);
+			assertThat(e.getMessage()).contains("The patch request refers to a task ID that does not exist.");
+		}
+	}
 }

@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class TaskAPITest {
@@ -38,7 +39,7 @@ public class TaskAPITest {
 
 		Task inputTask = new Task(rowId, taskTitle, taskSize, taskPosition);
 		Task savedTask = new Task(idFromService, rowId, taskTitle, taskSize, taskPosition);
-		Mockito.when(taskService.saveNewTask(inputTask)).thenReturn(savedTask);
+		when(taskService.saveNewTask(inputTask)).thenReturn(savedTask);
 
 		APITask response = api.postTask(rowId, new APITask(null, rowId, taskTitle, taskSize, taskPosition));
 
@@ -104,7 +105,7 @@ public class TaskAPITest {
 			api.postTask(55L, task);
 			fail("expecting exception");
 		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a positive integer for position is mandatory.\"");
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a non-negative integer for position is mandatory.\"");
 		}
 	}
 
@@ -139,19 +140,16 @@ public class TaskAPITest {
 
 
 	@Test
-	void postTaskRequiresAPositivePosition() {
-		try {
-			api.postTask(55L, new APITask(null, 55L, "something", 5, 0));
-			fail("expecting exception");
-		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a positive integer for position is mandatory.\"");
-		}
+	void postTaskRequiresANonNegativePosition() {
+		when(taskService.saveNewTask(any())).thenReturn(new Task());
+		APITask savedTask = api.postTask(55L, new APITask(null, 55L, "something", 5, 0));
+		assertThat(savedTask).isNotNull(); // no error on zero position
 
 		try {
 			api.postTask(55L, new APITask(null, 55L, "something", 5, -1));
 			fail("expecting exception");
 		} catch (RuntimeException e) {
-			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a positive integer for position is mandatory.\"");
+			assertThat(e.getMessage()).isEqualTo("400 BAD_REQUEST \"When POSTing a new Task, a non-negative integer for position is mandatory.\"");
 		}
 	}
 
@@ -159,7 +157,7 @@ public class TaskAPITest {
 	void patchTaskReturnsResponseFromServiceAfterCallingUpdate() {
 		Task inputTask = new Task(55L, null, "changed", null, null);
 		Task savedTask = new Task(55L, 27L, "changed", 4, 3);
-		Mockito.when(taskService.patchTask(inputTask)).thenReturn(savedTask);
+		when(taskService.patchTask(inputTask)).thenReturn(savedTask);
 
 		APITask response = api.patchTask(55L, new APITaskPatch(55L, "changed"));
 
@@ -198,7 +196,7 @@ public class TaskAPITest {
 	@Test
 	void patchTaskThrows404StyleExceptionIfDoesNotExist() {
 		APITaskPatch patchBody = new APITaskPatch(1L, "something");
-		Mockito.when(taskService.patchTask(patchBody.toDomainObject())).thenThrow(new TaskService.TaskNotFoundException("st"));
+		when(taskService.patchTask(patchBody.toDomainObject())).thenThrow(new TaskService.TaskNotFoundException("st"));
 
 		try {
 			api.patchTask(1L, patchBody);
@@ -212,7 +210,7 @@ public class TaskAPITest {
 	@Test
 	void patchTaskThrows500StyleExceptionIfServiceThrowsUnexpectedException() {
 		APITaskPatch task = new APITaskPatch(1L, "something");
-		Mockito.when(taskService.patchTask(task.toDomainObject())).thenThrow(new RuntimeException("st"));
+		when(taskService.patchTask(task.toDomainObject())).thenThrow(new RuntimeException("st"));
 
 		try {
 			api.patchTask(1L, task);
@@ -240,7 +238,7 @@ public class TaskAPITest {
 		Task task1 = new Task(5L, 33L, "st", 4, 2);
 		Task task2 = new Task(6L, 33L,"st else", 7, 3);
 		List<Task> taskList = List.of(task1, task2);
-		Mockito.when(taskService.getAllTasksForRow(33L)).thenReturn(taskList);
+		when(taskService.getAllTasksForRow(33L)).thenReturn(taskList);
 
 		List<APITask> apiTasks = api.getTasks(33L);
 
@@ -252,7 +250,7 @@ public class TaskAPITest {
 	@Test
 	void getTasksReturnsAnEmptyListIfNoTasksExist() {
 		List<Task> taskList = new LinkedList<>();
-		Mockito.when(taskService.getAllTasksForRow(5L)).thenReturn(taskList);
+		when(taskService.getAllTasksForRow(5L)).thenReturn(taskList);
 
 		List<APITask> apiTasks = api.getTasks(5L);
 
@@ -262,8 +260,8 @@ public class TaskAPITest {
 
 	@Test
 	void deleteTaskCallsServiceDeleteAndReturnsDeletedTask() {
-		Mockito.when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 33L, "st", 7, 1));
-		Mockito.when(taskService.deleteTask(55L)).thenReturn(new Task(55L, 33L,"st", 7, 1));
+		when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 33L, "st", 7, 1));
+		when(taskService.deleteTask(55L)).thenReturn(new Task(55L, 33L,"st", 7, 1));
 
 		APITask deletedTask = api.deleteTask(33L, 55L);
 
@@ -274,8 +272,8 @@ public class TaskAPITest {
 
 	@Test
 	void deleteTaskThrows404StyleExceptionIfServiceThrowsTaskNotFoundException() {
-		Mockito.when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 5L, "st", 1, 7));
-		Mockito.when(taskService.deleteTask(55L)).thenThrow(new TaskService.TaskNotFoundException("message should be independent"));
+		when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 5L, "st", 1, 7));
+		when(taskService.deleteTask(55L)).thenThrow(new TaskService.TaskNotFoundException("message should be independent"));
 
 		try {
 			api.deleteTask(5L, 55L);
@@ -288,8 +286,8 @@ public class TaskAPITest {
 
 	@Test
 	void deleteTaskThrows500StyleExceptionIfServiceThrowsUnexpectedException() {
-		Mockito.when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 5L, "st", 1, 5));
-		Mockito.when(taskService.deleteTask(55L)).thenThrow(new RuntimeException("st"));
+		when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 5L, "st", 1, 5));
+		when(taskService.deleteTask(55L)).thenThrow(new RuntimeException("st"));
 
 		try {
 			api.deleteTask(5L,55L);
@@ -302,7 +300,7 @@ public class TaskAPITest {
 
 	@Test
 	void deleteTaskRequiresPathRowIdToMatchWhatTheTaskHasSavedAsTheRowId() {
-		Mockito.when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 1L, "st", 1, 4));
+		when(taskService.findTaskWithId(55L)).thenReturn(new Task(55L, 1L, "st", 1, 4));
 
 		try {
 			api.deleteTask(5L,55L);
@@ -315,7 +313,7 @@ public class TaskAPITest {
 
 	@Test
 	void deleteTaskThrows500StyleExceptionIfServiceThrowsUnexpectedExceptionDuringGet() {
-		Mockito.when(taskService.findTaskWithId(55L)).thenThrow(new RuntimeException("st"));
+		when(taskService.findTaskWithId(55L)).thenThrow(new RuntimeException("st"));
 
 		try {
 			api.deleteTask(5L,55L);

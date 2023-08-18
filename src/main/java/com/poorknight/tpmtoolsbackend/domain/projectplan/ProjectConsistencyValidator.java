@@ -45,6 +45,9 @@ public class ProjectConsistencyValidator {
 
 		for (RowPatchTemplateTask taskTemplate : rowPatchTemplate.getTaskList()) {
 			Task taskForHydrating = taskMap.get(taskTemplate.getId());
+			if (taskForHydrating == null) {
+				throw new RowUpdateConsistencyException("The patch request refers to a task ID that does not exist.");
+			}
 			RowPatchTemplateTask hydratedTaskTemplate = buildHydratedTaskPatchTemplate(taskTemplate, taskForHydrating);
 			hydratedTemplate.getTaskList().add(hydratedTaskTemplate);
 		}

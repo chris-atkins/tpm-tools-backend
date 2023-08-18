@@ -58,9 +58,9 @@ public class TaskAPI {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"When POSTing a new Task, a positive integer for size is mandatory.");
 		}
-		if (task.getPosition() == null || task.getPosition() < 1) {
+		if (task.getPosition() == null || task.getPosition() < 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"When POSTing a new Task, a positive integer for position is mandatory.");
+					"When POSTing a new Task, a non-negative integer for position is mandatory.");
 		}
 		if (task.getTitle() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
