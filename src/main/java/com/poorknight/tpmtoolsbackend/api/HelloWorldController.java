@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class HelloWorldAPI {
+public class HelloWorldController {
 
 	@Autowired
 	private HelloService helloService;

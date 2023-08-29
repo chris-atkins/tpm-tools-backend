@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/project-plans/{projectPlanId}/rows")
-public class RowAPI {
+public class RowController {
 
 	@Autowired
 	private RowService rowService;

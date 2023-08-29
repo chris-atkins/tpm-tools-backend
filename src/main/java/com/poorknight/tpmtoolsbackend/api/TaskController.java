@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/project-plans/{projectPlanId}/rows/{rowId}/tasks")
-public class TaskAPI {
+public class TaskController {
 
 	@Autowired
 	private TaskService taskService;

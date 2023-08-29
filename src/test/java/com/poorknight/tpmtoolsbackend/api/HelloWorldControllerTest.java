@@ -14,10 +14,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
-class HelloWorldAPITest {
+class HelloWorldControllerTest {
 
 	@InjectMocks
-	HelloWorldAPI helloWorldAPI;
+    HelloWorldController helloWorldController;
 
 	@Mock
 	HelloService helloService;
@@ -26,7 +26,7 @@ class HelloWorldAPITest {
 	void testHelloReturnsNiceWelcomeString() {
 		Mockito.when(helloService.getRandomHelloMessage()).thenReturn(new HelloMessage("ohai from DB"));
 
-		APIMessage actual = helloWorldAPI.hello();
+		APIMessage actual = helloWorldController.hello();
 		APIMessage expected = new APIMessage("ohai from DB");
 		assertThat(actual).isEqualTo(expected);
 	}
@@ -36,7 +36,7 @@ class HelloWorldAPITest {
 		Mockito.when(helloService.getRandomHelloMessage()).thenThrow(new RuntimeException("oh balls user should not see this message."));
 
 		try {
-			helloWorldAPI.hello();
+			helloWorldController.hello();
 			Assertions.fail("Expecting an exception");
 		} catch (Exception e) {
 			assertThat(e.getMessage()).isEqualTo("There was a problem retrieving the data.");

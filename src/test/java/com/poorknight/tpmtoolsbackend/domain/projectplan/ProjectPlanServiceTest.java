@@ -9,7 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
+import static com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectPlanService.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProjectPlanServiceTest extends BaseUnitTestWithDatabase {
 
@@ -54,5 +56,12 @@ class ProjectPlanServiceTest extends BaseUnitTestWithDatabase {
 		assertThat(row2Tasks.get(0).getTitle()).isEqualTo("row 2 task 1");
 		assertThat(row2Tasks.get(1).getRowId()).isEqualTo(row2Id);
 		assertThat(row2Tasks.get(1).getTitle()).isEqualTo("row 2 task 2");
+	}
+
+	@Test
+	void getProjectPlanThrowsExceptionIfNoneIsFoundMatchingId() {
+		ProjectPlanNotFoundException e = assertThrows(ProjectPlanNotFoundException.class,
+				() -> service.getProjectPlan(-1L));
+		assertThat(e.getMessage()).contains("No project plan found for the given id: -1");
 	}
 }
