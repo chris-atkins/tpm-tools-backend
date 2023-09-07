@@ -190,7 +190,7 @@ class ProjectConsistencyValidatorTest {
 			fail("expecting exception");
 		} catch (RuntimeException e) {
 			assertThat(e.getClass()).isEqualTo(RowUpdateConsistencyException.class);
-			assertThat(e.getMessage()).contains("The patch request refers to a task ID that does not exist.");
+			assertThat(e.getMessage()).contains("The patch request refers to a task ID that does not exist: 13");
 		}
 	}
 

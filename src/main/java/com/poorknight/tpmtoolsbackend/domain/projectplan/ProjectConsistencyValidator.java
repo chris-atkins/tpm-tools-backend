@@ -90,7 +90,7 @@ public class ProjectConsistencyValidator {
 		for (TaskPatchTemplate task : changedTasks.values()) {
 			Task original = originalTasks.get(task.getId());
 			if (original == null) {
-				throw new RowUpdateConsistencyException("The patch request refers to a task ID that does not exist.");
+				throw new RowUpdateConsistencyException("The patch request refers to a task ID that does not exist: " + task.getId());
 			}
 			TaskPatchTemplate newTask = hydrateTaskPatchTemplate(original, task);
 			combinedTaskMap.put(task.getId(), newTask);
