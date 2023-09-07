@@ -146,7 +146,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 		Long task2Id = getTaskIdFromPostResponse(task2Response);
 
 		ResponseEntity<String> patchResponse = patchRow(rowId,projectPlanId, String.format("""
-    		{
+						{
 				"tasks": [
 					{
 						"id": %d,
@@ -156,11 +156,11 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 					{
 						"id": %d,
 						"size": 3,
-						"position": 3
+						"position": 4
 					}
 				]
-    		}
-    	""", task1Id, task2Id));
+						}
+					""", task1Id, task2Id));
 		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 		ResponseEntity<String> getResponse = getAllRows(projectPlanId);
@@ -183,7 +183,7 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 								"rowId": %d,
 								"title": "task 2",
 								"size": 3,
-								"position": 3
+								"position": 4
 							}
 						]
 					}
@@ -191,6 +191,51 @@ public class RowIT extends BaseIntegrationTestWithDatabase {
 				""", rowId, projectPlanId, task1Id, rowId, task2Id, rowId);
 
 		JSONAssert.assertEquals(expectedResult, getResponse.getBody(), JSONCompareMode.STRICT);
+	}
+
+	@Test
+	@SneakyThrows
+	void aPATCHRequestGives400ErrorIfPatchResultsInOverlappedTasks() throws JSONException {
+		ResponseEntity<String> postResponse = postNewRow(projectPlanId, String.format("""
+			{
+  				"projectPlanId": %d,
+  				"title": "original title"
+  			}""", projectPlanId));
+		Long rowId = getRowIdFromPostResponse(postResponse);
+
+		ResponseEntity<String> task1Response = postNewTask(projectPlanId, rowId, String.format("""
+				{
+					"rowId": %d,
+					"title": "task 1",
+					"size": 1,
+					"position": 1
+				}
+				""", rowId));
+		Long task1Id = getTaskIdFromPostResponse(task1Response);
+
+		ResponseEntity<String> task2Response = postNewTask(projectPlanId, rowId, String.format("""
+				{
+					"rowId": %d,
+					"title": "task 2",
+					"size": 1,
+					"position": 2
+				}
+				""", rowId));
+		Long task2Id = getTaskIdFromPostResponse(task2Response);
+
+		String path = buildPatchUrlPath(rowId, projectPlanId);
+		ResponseEntity<String> patchResponse = makePATCHRequest(String.format("""
+						{
+				"tasks": [
+					{
+						"id": %d,
+						"size": 2
+					}
+				]
+						}
+					""", task1Id), path);
+		assertThat(patchResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(patchResponse.getBody()).contains("The proposed change results in more than one task occupying the same space");
 	}
 
 	@Test

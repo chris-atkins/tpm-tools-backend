@@ -3,7 +3,7 @@ package com.poorknight.tpmtoolsbackend.api.entity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
-import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.TaskPatchTemplate;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ public class APIRowPatch {
 			return new RowPatchTemplate(id, this.title, null);
 		}
 
-		List<RowPatchTemplateTask> taskList = new ArrayList<>();
+		List<TaskPatchTemplate> taskList = new ArrayList<>();
 		for (APIRowPatchTask task : this.tasks) {
 			taskList.add(task.toDomainObject());
 		}

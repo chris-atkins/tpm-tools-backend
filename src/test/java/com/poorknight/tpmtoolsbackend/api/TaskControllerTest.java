@@ -2,7 +2,7 @@ package com.poorknight.tpmtoolsbackend.api;
 
 import com.poorknight.tpmtoolsbackend.api.entity.APITask;
 import com.poorknight.tpmtoolsbackend.api.entity.APITaskPatch;
-import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

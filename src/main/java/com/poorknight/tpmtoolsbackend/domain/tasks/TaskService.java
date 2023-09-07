@@ -1,5 +1,6 @@
 package com.poorknight.tpmtoolsbackend.domain.tasks;
 
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

@@ -1,6 +1,6 @@
 package com.poorknight.tpmtoolsbackend.api.entity;
 
-import com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectPlan;
+import com.poorknight.tpmtoolsbackend.domain.projectplan.entity.ProjectPlan;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;

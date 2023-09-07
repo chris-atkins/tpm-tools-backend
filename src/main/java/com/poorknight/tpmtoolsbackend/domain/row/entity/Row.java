@@ -1,7 +1,7 @@
 package com.poorknight.tpmtoolsbackend.domain.row.entity;
 
 import com.google.common.collect.ImmutableList;
-import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import jakarta.persistence.*;
 import lombok.Data;
 

@@ -4,9 +4,10 @@ import com.poorknight.tpmtoolsbackend.domain.BaseUnitTestWithDatabase;
 import com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectConsistencyValidator;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
-import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
-import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.TaskPatchTemplate;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import com.poorknight.tpmtoolsbackend.domain.tasks.TaskRepository;
+import org.assertj.core.api.Fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -82,6 +83,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 		try {
 			this.rowService.saveNewRow(rowToSave);
+			fail("expecting exception");
 		} catch (RuntimeException e) {
 			assertThat(e.getMessage()).isEqualTo("validation message");
 		}
@@ -218,7 +220,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long rowId = createRowWithSQLOnly(projectPlanId, "ohai");
 		Long taskId = createTaskWithSQLOnly(rowId, "task 1", 1, 1);
 
-		RowPatchTemplateTask taskTemplate = new RowPatchTemplateTask(taskId, 2, 5);
+		TaskPatchTemplate taskTemplate = TaskPatchTemplate.builder().id(taskId).size(2).position(5).build();
 		RowPatchTemplate row = new RowPatchTemplate(rowId, "ohai", List.of(taskTemplate));
 
 		rowService.patchRow(row);
@@ -243,7 +245,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long rowId = createRowWithSQLOnly(projectPlanId, "ohai");
 		Long taskId = createTaskWithSQLOnly(rowId, "task 1", 1, 1);
 
-		RowPatchTemplateTask taskTemplate = new RowPatchTemplateTask(taskId, 2, 5);
+		TaskPatchTemplate taskTemplate = TaskPatchTemplate.builder().id(taskId).size(2).position(5).build();
 		RowPatchTemplate row = new RowPatchTemplate(rowId, null, List.of(taskTemplate));
 
 		rowService.patchRow(row);
@@ -287,7 +289,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long rowId = createRowWithSQLOnly(projectPlanId, "ohai");
 		Long taskId = createTaskWithSQLOnly(rowId, "task 1", 1, 2);
 
-		RowPatchTemplateTask taskTemplate = new RowPatchTemplateTask(taskId, null, 3);
+		TaskPatchTemplate taskTemplate = TaskPatchTemplate.builder().id(taskId).size(null).position(3).build();
 		RowPatchTemplate rowTemplate = new RowPatchTemplate(rowId, "new title", List.of(taskTemplate));
 		rowService.patchRow(rowTemplate);
 
@@ -311,7 +313,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long rowId = createRowWithSQLOnly(projectPlanId, "ohai");
 		Long taskId = createTaskWithSQLOnly(rowId, "task 1", 1, 2);
 
-		RowPatchTemplateTask taskTemplate = new RowPatchTemplateTask(taskId, 3, null);
+		TaskPatchTemplate taskTemplate = TaskPatchTemplate.builder().id(taskId).size(3).position(null).build();
 		RowPatchTemplate rowTemplate = new RowPatchTemplate(rowId, "new title", List.of(taskTemplate));
 		rowService.patchRow(rowTemplate);
 
@@ -336,8 +338,8 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long task1Id = createTaskWithSQLOnly(rowId, "task 1", 1, 2);
 		Long task2Id = createTaskWithSQLOnly(rowId, "task 2", 3, 4);
 
-		RowPatchTemplateTask task1Template = new RowPatchTemplateTask(task1Id, 2, 1);
-		RowPatchTemplateTask task2Template = new RowPatchTemplateTask(task2Id, 4, 5);
+		TaskPatchTemplate task1Template = TaskPatchTemplate.builder().id(task1Id).size(2).position(1).build();
+		TaskPatchTemplate task2Template = TaskPatchTemplate.builder().id(task2Id).size(4).position(5).build();
 		RowPatchTemplate row = new RowPatchTemplate(rowId, null, List.of(task1Template, task2Template));
 
 		rowService.patchRow(row);
@@ -372,8 +374,8 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long task2Id = createTaskWithSQLOnly(rowId, "task 2", 1, 4);
 		Long task3Id = createTaskWithSQLOnly(rowId, "task 3", 1, 6);
 
-		RowPatchTemplateTask task1Template = new RowPatchTemplateTask(task1Id, 2, 1);
-		RowPatchTemplateTask task3Template = new RowPatchTemplateTask(task3Id, 4, 5);
+		TaskPatchTemplate task1Template = TaskPatchTemplate.builder().id(task1Id).size(2).position(1).build();
+		TaskPatchTemplate task3Template = TaskPatchTemplate.builder().id(task3Id).size(4).position(5).build();
 		RowPatchTemplate row = new RowPatchTemplate(rowId, null, List.of(task1Template, task3Template));
 
 		rowService.patchRow(row);
@@ -415,9 +417,9 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long task2Id = createTaskWithSQLOnly(rowId, "task 2", 1, 4);
 		Long task3Id = createTaskWithSQLOnly(rowId, "task 3", 1, 6);
 
-		RowPatchTemplateTask task1Template = new RowPatchTemplateTask(task1Id, 2, 1);
-		RowPatchTemplateTask task2Template = new RowPatchTemplateTask(task1Id, 2, 3);
-		RowPatchTemplateTask task3Template = new RowPatchTemplateTask(task3Id, 4, 5);
+		TaskPatchTemplate task1Template = TaskPatchTemplate.builder().id(task1Id).size(2).position(1).build();
+		TaskPatchTemplate task2Template = TaskPatchTemplate.builder().id(task1Id).size(2).position(3).build();
+		TaskPatchTemplate task3Template = TaskPatchTemplate.builder().id(task3Id).size(4).position(5).build();
 		RowPatchTemplate row = new RowPatchTemplate(rowId, "changed title", List.of(task1Template, task2Template, task3Template));
 
 		// throw an exception on the 3rd task being updated -> no updates should happen, we want this to be an atomic operation (all or nothing!)
@@ -464,7 +466,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		Long rowId = createRowWithSQLOnly(projectPlanId, "sup");
 		Long task1Id = createTaskWithSQLOnly(rowId, "task 1", 1, 2);
 
-		RowPatchTemplateTask task1Template = new RowPatchTemplateTask(task1Id, 2, 1);
+		TaskPatchTemplate task1Template = TaskPatchTemplate.builder().id(task1Id).size(2).position(1).build();
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(rowId, null, List.of(task1Template));
 
 		List<Row> rows = rowService.getAllRowsForProjectPlan(projectPlanId);
@@ -487,7 +489,7 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 
 		Long rowId = createRowWithSQLOnly(projectPlanId, "ohai");
 		Long taskId = createTaskWithSQLOnly(rowId, "task 1", 1, 1);
-		RowPatchTemplateTask taskTemplate = new RowPatchTemplateTask(taskId, 2, 5);
+		TaskPatchTemplate taskTemplate = TaskPatchTemplate.builder().id(taskId).size(2).position(5).build();
 		RowPatchTemplate rorowPatchTemplate = new RowPatchTemplate(rowId, "ohai", List.of(taskTemplate));
 
 		try {
@@ -498,6 +500,45 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 			Mockito.verifyNoInteractions(taskRepository);
 			Mockito.verify(rowRepository, never()).save(any());
 		}
+	}
+
+	@Test
+	void returnedRowRepresentsChanges() {
+
+		Long rowId = createRowWithSQLOnly(projectPlanId, "ohai");
+		Long task1Id = createTaskWithSQLOnly(rowId, "task 1", 1, 2);
+		Long task2Id = createTaskWithSQLOnly(rowId, "task 2", 1, 4);
+		Long task3Id = createTaskWithSQLOnly(rowId, "task 3", 1, 6);
+
+		TaskPatchTemplate task1Template = TaskPatchTemplate.builder().id(task1Id).size(2).position(1).build();
+		TaskPatchTemplate task3Template = TaskPatchTemplate.builder().id(task3Id).size(4).position(5).build();
+		RowPatchTemplate row = new RowPatchTemplate(rowId, null, List.of(task1Template, task3Template));
+
+		Row returnedRow = rowService.patchRow(row);
+
+		assertThat(returnedRow.getTitle()).isEqualTo("ohai");
+
+		assertThat(returnedRow.getTaskList().size()).isEqualTo(3);
+		Task returnedTask1 = returnedRow.getTaskList().get(0);
+		assertThat(returnedTask1.getId()).isEqualTo(task1Id);
+		assertThat(returnedTask1.getRowId()).isEqualTo(rowId);
+		assertThat(returnedTask1.getTitle()).isEqualTo("task 1");
+		assertThat(returnedTask1.getSize()).isEqualTo(2);
+		assertThat(returnedTask1.getPosition()).isEqualTo(1);
+
+		Task returnedTask2 = returnedRow.getTaskList().get(1);
+		assertThat(returnedTask2.getId()).isEqualTo(task2Id);
+		assertThat(returnedTask2.getRowId()).isEqualTo(rowId);
+		assertThat(returnedTask2.getTitle()).isEqualTo("task 2");
+		assertThat(returnedTask2.getSize()).isEqualTo(1);
+		assertThat(returnedTask2.getPosition()).isEqualTo(4);
+
+		Task returnedTask3 = returnedRow.getTaskList().get(2);
+		assertThat(returnedTask3.getId()).isEqualTo(task3Id);
+		assertThat(returnedTask3.getRowId()).isEqualTo(rowId);
+		assertThat(returnedTask3.getTitle()).isEqualTo("task 3");
+		assertThat(returnedTask3.getSize()).isEqualTo(4);
+		assertThat(returnedTask3.getPosition()).isEqualTo(5);
 	}
 
 	private int findCountOfRows() {
@@ -535,4 +576,5 @@ class RowServiceTest extends BaseUnitTestWithDatabase {
 		connection.close();
 		return found;
 	}
+
 }

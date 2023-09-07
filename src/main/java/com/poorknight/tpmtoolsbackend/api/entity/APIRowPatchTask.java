@@ -2,7 +2,7 @@ package com.poorknight.tpmtoolsbackend.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.TaskPatchTemplate;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -24,7 +24,7 @@ public class APIRowPatchTask {
 		this.position = position;
 	}
 
-	public RowPatchTemplateTask toDomainObject() {
-		return new RowPatchTemplateTask(this.id, this.size, this.position);
+	public TaskPatchTemplate toDomainObject() {
+		return TaskPatchTemplate.builder().id(this.id).size(this.size).position(this.position).build();
 	}
 }

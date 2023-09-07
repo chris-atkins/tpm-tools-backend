@@ -1,10 +1,9 @@
-package com.poorknight.tpmtoolsbackend.domain.projectplan;
+package com.poorknight.tpmtoolsbackend.domain.projectplan.entity;
 
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 
 import java.util.List;

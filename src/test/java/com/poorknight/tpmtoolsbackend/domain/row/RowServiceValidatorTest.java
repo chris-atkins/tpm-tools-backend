@@ -2,7 +2,7 @@ package com.poorknight.tpmtoolsbackend.domain.row;
 
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
-import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 

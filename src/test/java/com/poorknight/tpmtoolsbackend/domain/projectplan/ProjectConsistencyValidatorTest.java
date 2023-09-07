@@ -1,14 +1,19 @@
 package com.poorknight.tpmtoolsbackend.domain.projectplan;
 
 import com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectConsistencyValidator.RowUpdateConsistencyException;
+import com.poorknight.tpmtoolsbackend.domain.projectplan.entity.ProjectPlan;
+import com.poorknight.tpmtoolsbackend.domain.projectplan.entity.ProjectPlanPatchTemplate;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
-import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
-import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.TaskPatchTemplate;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectConsistencyValidator.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -23,7 +28,7 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(11L, 1, 3)
+				TaskPatchTemplate.builder().id(11L).size(1).position(3).build()
 		));
 
 		new ProjectConsistencyValidator().validateRowChangeSetThrowingExceptions(row, rowPatchTemplate);
@@ -40,7 +45,7 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(11L, 1, 0)
+				TaskPatchTemplate.builder().id(11L).size(1).position(0).build()
 		));
 
 		try {
@@ -60,8 +65,8 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(10L, 1, 5),
-				new RowPatchTemplateTask(11L, 1, 0)
+				TaskPatchTemplate.builder().id(10L).size(1).position(5).build(),
+				TaskPatchTemplate.builder().id(11L).size(1).position(0).build()
 		));
 
 		new ProjectConsistencyValidator().validateRowChangeSetThrowingExceptions(row, rowPatchTemplate);
@@ -78,7 +83,7 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(12L, 1, 3)
+				TaskPatchTemplate.builder().id(12L).size(1).position(3).build()
 		));
 
 		try {
@@ -98,7 +103,7 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(10L, 5, 1)
+				TaskPatchTemplate.builder().id(10L).size(5).position(1).build()
 		));
 
 		try {
@@ -118,9 +123,9 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(10L, 4, 3),
-				new RowPatchTemplateTask(11L, 3, 15),
-				new RowPatchTemplateTask(12L, 5, 7)
+				TaskPatchTemplate.builder().id(10L).size(4).position(3).build(),
+				TaskPatchTemplate.builder().id(11L).size(3).position(15).build(),
+				TaskPatchTemplate.builder().id(12L).size(5).position(7).build()
 		));
 
 		new ProjectConsistencyValidator().validateRowChangeSetThrowingExceptions(row, rowPatchTemplate);
@@ -137,9 +142,9 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(12L, 1, 0),
-				new RowPatchTemplateTask(10L, null, 4),
-				new RowPatchTemplateTask(11L, 3, null)
+				TaskPatchTemplate.builder().id(12L).size(1).position(0).build(),
+				TaskPatchTemplate.builder().id(10L).size(null).position(4).build(),
+				TaskPatchTemplate.builder().id(11L).size(3).position(null).build()
 		));
 
 		new ProjectConsistencyValidator().validateRowChangeSetThrowingExceptions(row, rowPatchTemplate);
@@ -156,8 +161,8 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(10L, null, 1),
-				new RowPatchTemplateTask(11L, 2, null)
+				TaskPatchTemplate.builder().id(10L).size(null).position(1).build(),
+				TaskPatchTemplate.builder().id(11L).size(2).position(null).build()
 		));
 
 		try {
@@ -177,7 +182,7 @@ class ProjectConsistencyValidatorTest {
 		));
 
 		RowPatchTemplate rowPatchTemplate = new RowPatchTemplate(1L, "row title", List.of(
-				new RowPatchTemplateTask(13L, 1, null)
+				TaskPatchTemplate.builder().id(13L).size(1).position(null).build()
 		));
 
 		try {
@@ -187,5 +192,87 @@ class ProjectConsistencyValidatorTest {
 			assertThat(e.getClass()).isEqualTo(RowUpdateConsistencyException.class);
 			assertThat(e.getMessage()).contains("The patch request refers to a task ID that does not exist.");
 		}
+	}
+
+	@Test
+	void wholeProjectValidatorPassesWithValidChangeMovingATaskToANewRow() {
+		Row row1 = new Row(1L, 55L, "row 1", List.of(
+				new Task(10L, 1L, "task 1-1", 1, 0),
+				new Task(11L, 1L, "task 1-2", 2, 1),
+				new Task(12L, 1L, "task 1-3", 1, 3)
+		));
+
+		Row row2 = new Row(2L, 55L, "row 2", List.of(
+				new Task(20L, 2L, "task 2-1", 1, 0),
+				new Task(21L, 2L, "task 2-2", 1, 1),
+				new Task(22L, 2L, "task 2-3", 1, 2)
+		));
+
+		ProjectPlan projectPlan = new ProjectPlan(55L, "", List.of(row1, row2));
+
+
+		RowPatchTemplate row2PatchTemplate = new RowPatchTemplate(2L, null, List.of(
+				TaskPatchTemplate.builder().id(11L).rowId(2L).position(1).build(),
+				TaskPatchTemplate.builder().id(21L).position(3).build(),
+				TaskPatchTemplate.builder().id(22L).position(4).build()
+		));
+		ProjectPlanPatchTemplate projectPlanPatchTemplate = new ProjectPlanPatchTemplate(55L, "", List.of(row2PatchTemplate));
+
+
+		new ProjectConsistencyValidator().validateProjectPlanChangeSetThrowingExceptions(projectPlan, projectPlanPatchTemplate);
+
+		assertThat(true).isTrue(); // validation should pass - nothing happens other than no exceptions are thrown
+	}
+
+	@Test
+	void wholeProjectValidatorFailsIfMovingATaskToANewRowResultsInOverlap() {
+		Row row1 = new Row(1L, 55L, "row 1", List.of(
+				new Task(10L, 1L, "task 1-1", 1, 0),
+				new Task(11L, 1L, "task 1-2", 2, 1),
+				new Task(12L, 1L, "task 1-3", 1, 3)
+		));
+
+		Row row2 = new Row(2L, 55L, "row 2", List.of(
+				new Task(20L, 1L, "task 2-1", 1, 0),
+				new Task(21L, 1L, "task 2-2", 1, 1),
+				new Task(22L, 1L, "task 2-3", 1, 2)
+		));
+
+		ProjectPlan projectPlan = new ProjectPlan(55L, "", List.of(row1, row2));
+
+
+		RowPatchTemplate row2PatchTemplate = new RowPatchTemplate(2L, null, List.of(
+				TaskPatchTemplate.builder().id(11L).rowId(2L).position(1).build(),
+				TaskPatchTemplate.builder().id(21L).position(2).build()
+		));
+		ProjectPlanPatchTemplate projectPlanPatchTemplate = new ProjectPlanPatchTemplate(55L, "", List.of(row2PatchTemplate));
+
+
+		assertThatThrownBy(() ->
+				new ProjectConsistencyValidator().validateProjectPlanChangeSetThrowingExceptions(projectPlan, projectPlanPatchTemplate))
+				.isOfAnyClassIn(ProjectPlanUpdateConsistencyException.class)
+				.hasMessage("The proposed change results in more than one task occupying the same space.");
+	}
+
+	@Test
+	void passesValidationIfNullRowsInProjectPlanTemplate() {
+		Row row1 = new Row(1L, 55L, "row 1", List.of(
+				new Task(10L, 1L, "task 1-1", 1, 0),
+				new Task(11L, 1L, "task 1-2", 2, 1),
+				new Task(12L, 1L, "task 1-3", 1, 3)
+		));
+
+		Row row2 = new Row(2L, 55L, "row 2", List.of(
+				new Task(20L, 2L, "task 2-1", 1, 0),
+				new Task(21L, 2L, "task 2-2", 1, 1),
+				new Task(22L, 2L, "task 2-3", 1, 2)
+		));
+
+		ProjectPlan projectPlan = new ProjectPlan(55L, "", List.of(row1, row2));
+
+		ProjectPlanPatchTemplate projectPlanPatchTemplate = new ProjectPlanPatchTemplate(55L, "new title", null);
+		new ProjectConsistencyValidator().validateProjectPlanChangeSetThrowingExceptions(projectPlan, projectPlanPatchTemplate);
+
+		assertThat(true).isTrue(); // validation should pass - nothing happens other than no exceptions are thrown
 	}
 }

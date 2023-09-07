@@ -3,8 +3,8 @@ package com.poorknight.tpmtoolsbackend.domain.row;
 import com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectConsistencyValidator;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
-import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplateTask;
-import com.poorknight.tpmtoolsbackend.domain.tasks.Task;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.TaskPatchTemplate;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import com.poorknight.tpmtoolsbackend.domain.tasks.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional(propagation = Propagation.REQUIRES_NEW)
+@Transactional(propagation = Propagation.REQUIRED)
 @RequiredArgsConstructor
 public class RowService {
 
@@ -70,7 +70,7 @@ public class RowService {
 	}
 
 	private void updateTasksInRow(RowPatchTemplate rowPatchTemplate) {
-		for (RowPatchTemplateTask tastPatchTemplate : rowPatchTemplate.getTaskList()) {
+		for (TaskPatchTemplate tastPatchTemplate : rowPatchTemplate.getTaskList()) {
 			Task taskBeingUpdated = taskService.findTaskWithId(tastPatchTemplate.getId());
 
 			if (tastPatchTemplate.getSize() != null) {

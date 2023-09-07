@@ -2,6 +2,7 @@ package com.poorknight.tpmtoolsbackend.api;
 
 import com.poorknight.tpmtoolsbackend.api.entity.APIRow;
 import com.poorknight.tpmtoolsbackend.api.entity.APIRowPatch;
+import com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectConsistencyValidator;
 import com.poorknight.tpmtoolsbackend.domain.row.RowServiceValidator;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.RowPatchTemplate;
@@ -14,6 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.poorknight.tpmtoolsbackend.domain.projectplan.ProjectConsistencyValidator.*;
 
 @RestController
 @RequestMapping("/api/v1/project-plans/{projectPlanId}/rows")
@@ -59,6 +62,9 @@ public class RowController {
 
 		} catch(RowServiceValidator.RowNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unable to complete operation.  Either the rowId does not point to an existing row, or you do not have access to it.");
+
+		} catch(RowUpdateConsistencyException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
 		}
 	}
 

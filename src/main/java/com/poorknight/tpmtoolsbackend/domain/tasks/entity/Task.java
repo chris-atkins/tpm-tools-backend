@@ -1,4 +1,4 @@
-package com.poorknight.tpmtoolsbackend.domain.tasks;
+package com.poorknight.tpmtoolsbackend.domain.tasks.entity;
 
 import lombok.*;
 

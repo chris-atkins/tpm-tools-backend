@@ -1,5 +1,6 @@
 package com.poorknight.tpmtoolsbackend.domain.tasks;
 
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 

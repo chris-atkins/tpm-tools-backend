@@ -3,6 +3,7 @@ package com.poorknight.tpmtoolsbackend.domain.tasks;
 import com.poorknight.tpmtoolsbackend.domain.BaseUnitTestWithDatabase;
 import com.poorknight.tpmtoolsbackend.domain.row.entity.Row;
 import com.poorknight.tpmtoolsbackend.domain.row.RowService;
+import com.poorknight.tpmtoolsbackend.domain.tasks.entity.Task;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
