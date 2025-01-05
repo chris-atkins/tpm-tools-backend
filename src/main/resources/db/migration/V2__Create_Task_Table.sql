@@ -1,6 +1,6 @@
-CREATE TABLE TASK (
-    ID int NOT NULL AUTO_INCREMENT,
-    TITLE varchar(255) NULL,
+CREATE TABLE task (
+    id SERIAL NOT NULL,
+    title varchar(255) NULL,
 
-    PRIMARY KEY (ID)
+    PRIMARY KEY (id)
 );

@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Data
-@Table(name = "\"TASK\"")
+@Table(name = "task")
 public class Task {
 
 	public Task() {
@@ -29,7 +29,7 @@ public class Task {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "P1_ROW_FK", nullable = false)
+	@Column(name = "p1_row_fk", nullable = false)
 	private Long rowId;
 
 	@Column(nullable = false)

@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 @Data
 @RequiredArgsConstructor
 @NoArgsConstructor
-@Table(name = "\"HELLO\"")
+@Table(name = "hello")
 public class HelloMessage {
 
 	@Id

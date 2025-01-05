@@ -1,16 +1,16 @@
 package com.poorknight.tpmtoolsbackend.domain;
 
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.*;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 
 public class BaseTestWithDatabase {
 
-	public static MySQLContainer db = (MySQLContainer) new MySQLContainer(DockerImageName.parse("mysql:8.0.27"))
-			.withDatabaseName("tpm-tools")
+	public static PostgreSQLContainer<?> db = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+			.withDatabaseName("tpm_tools")
 			.withUsername("Chris")
 			.withPassword("theBestPassword");
 
@@ -19,18 +19,41 @@ public class BaseTestWithDatabase {
 	static {
 		db.start();
 		url = db.getJdbcUrl();
+		createSchemaAndSetAsDefault("tpm_tools");
 	}
 
-	protected Connection getConnection() throws SQLException {
+	protected static Connection getConnection() throws SQLException {
 		Properties connectionProps = new Properties();
 		connectionProps.setProperty("user", db.getUsername());
 		connectionProps.setProperty("password", db.getPassword());
-		return DriverManager.getConnection(this.url, connectionProps);
+		return DriverManager.getConnection(url, connectionProps);
+	}
+
+	private static void createSchemaAndSetAsDefault(String schemaName) {
+		try {
+			while (!db.isRunning()) {
+				System.out.println("DB is not running - waiting 1 sec");
+				TimeUnit.SECONDS.sleep(1);
+			}
+
+			System.out.println("creating schema");
+			Connection connection = getConnection();
+			Statement createSchemaStatement = connection.createStatement();
+			createSchemaStatement.executeUpdate("CREATE SCHEMA " + schemaName);
+			createSchemaStatement.executeUpdate("ALTER DATABASE tpm_tools SET search_path TO tpm_tools");
+			createSchemaStatement.close();
+			connection.close();
+			System.out.println("done creating schema");
+
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	protected void deleteAllTasks() {
 		try {
-			Connection connection = this.getConnection();
+			Connection connection = getConnection();
 			Statement statement = connection.createStatement();
 			statement.executeUpdate("DELETE FROM TASK");
 
@@ -45,7 +68,7 @@ public class BaseTestWithDatabase {
 
 		this.deleteAllTasks();
 		try {
-			Connection connection = this.getConnection();
+			Connection connection = getConnection();
 			Statement statement = connection.createStatement();
 			statement.executeUpdate("DELETE FROM P1_ROW");
 
@@ -60,7 +83,7 @@ public class BaseTestWithDatabase {
 
 		this.deleteAllTasksAndRows();
 		try {
-			Connection connection = this.getConnection();
+			Connection connection = getConnection();
 			Statement statement = connection.createStatement();
 			statement.executeUpdate("DELETE FROM P0_PROJECT_PLAN");
 
@@ -77,13 +100,13 @@ public class BaseTestWithDatabase {
 	}
 	protected Long createTaskWithSQLOnly(Long rowId, String title, Integer size, Integer position) {
 		try {
-			Connection connection = this.getConnection();
+			Connection connection = getConnection();
 			Statement statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO TASK (P1_ROW_FK, TITLE, SIZE, POSITION) VALUES (" + rowId + ", \"" + title + "\", " + size + ", " + position + ")");
+			statement.executeUpdate("INSERT INTO TASK (P1_ROW_FK, TITLE, SIZE, POSITION) VALUES (" + rowId + ", '" + title + "', " + size + ", " + position + ")");
 			statement.close();
 
 			Statement taskQueryStatement = connection.createStatement();
-			ResultSet resultSet = taskQueryStatement.executeQuery("SELECT * FROM TASK WHERE P1_ROW_FK=\"" + rowId +"\" AND TITLE=\"" + title + "\"");
+			ResultSet resultSet = taskQueryStatement.executeQuery("SELECT * FROM TASK WHERE P1_ROW_FK='" + rowId +"' AND TITLE='" + title + "'");
 			Long taskId = null;
 			while (resultSet.next()) {
 				taskId = resultSet.getLong("ID");
@@ -99,14 +122,14 @@ public class BaseTestWithDatabase {
 
 	protected Long createRowWithSQLOnly(Long projectPlanId, String title) {
 		try {
-			Connection connection = this.getConnection();
+			Connection connection = getConnection();
 
 			Statement statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO P1_ROW (P0_PROJECT_PLAN_FK, TITLE) VALUES (" + projectPlanId + ", \"" + title + "\")");
+			statement.executeUpdate("INSERT INTO p1_row (p0_project_plan_fk, title) VALUES (" + projectPlanId + ", '" + title + "')");
 			statement.close();
 
 			Statement rowQueryStatement = connection.createStatement();
-			ResultSet resultSet = rowQueryStatement.executeQuery("SELECT * FROM P1_ROW WHERE P0_PROJECT_PLAN_FK=" + projectPlanId + " AND TITLE=\"" + title + "\"");
+			ResultSet resultSet = rowQueryStatement.executeQuery("SELECT * FROM p1_row WHERE p0_project_plan_fk=" + projectPlanId + " AND TITLE='" + title + "'");
 
 			int count = 0;
 			Long rowId = null;
@@ -130,14 +153,14 @@ public class BaseTestWithDatabase {
 
 	protected Long createProjectPlanWithSQLOnly(String title) {
 		try {
-			Connection connection = this.getConnection();
+			Connection connection = getConnection();
 
 			Statement statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO P0_PROJECT_PLAN (TITLE) VALUES (\"" + title + "\")");
+			statement.executeUpdate("INSERT INTO p0_project_plan (title) VALUES ('" + title + "')");
 			statement.close();
 
 			Statement rowQueryStatement = connection.createStatement();
-			ResultSet resultSet = rowQueryStatement.executeQuery("SELECT * FROM P0_PROJECT_PLAN WHERE TITLE=\"" + title + "\"");
+			ResultSet resultSet = rowQueryStatement.executeQuery("SELECT * FROM p0_project_plan WHERE title='" + title + "'");
 
 			int count = 0;
 			Long projectPlanId = null;

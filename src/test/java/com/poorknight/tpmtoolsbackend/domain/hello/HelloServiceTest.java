@@ -95,7 +95,7 @@ class HelloServiceTest extends BaseUnitTestWithDatabase {
 	private int findTotalNumberOfHelloMessages() throws SQLException {
 		Connection connection = this.getConnection();
 		Statement statement = connection.createStatement();
-		ResultSet resultSet = statement.executeQuery("SELECT * FROM HELLO");
+		ResultSet resultSet = statement.executeQuery("SELECT * FROM hello");
 
 		int count = 0;
 		while (resultSet.next()) {
@@ -111,7 +111,7 @@ class HelloServiceTest extends BaseUnitTestWithDatabase {
 		Connection connection = this.getConnection();
 		Statement statement = connection.createStatement();
 
-		statement.execute("INSERT INTO HELLO(MESSAGE) VALUES ('" + message + "')");
+		statement.execute("INSERT INTO hello(message) VALUES ('" + message + "')");
 
 		statement.close();
 		connection.close();
@@ -120,11 +120,11 @@ class HelloServiceTest extends BaseUnitTestWithDatabase {
 	private boolean canFindMessageWithText(String messageToSearchFor) throws SQLException {
 		Connection connection = this.getConnection();
 		Statement statement = connection.createStatement();
-		ResultSet resultSet = statement.executeQuery("SELECT * FROM HELLO");
+		ResultSet resultSet = statement.executeQuery("SELECT * FROM hello");
 
 		boolean found = false;
 		while (resultSet.next()) {
-			if (messageToSearchFor.equals(resultSet.getString("MESSAGE"))) {
+			if (messageToSearchFor.equals(resultSet.getString("message"))) {
 				found = true;
 			}
 		}
@@ -137,12 +137,12 @@ class HelloServiceTest extends BaseUnitTestWithDatabase {
 	private Long findIdThatBelongsToEntryWithMessage(String messageToSearchFor) throws SQLException {
 		Connection connection = getConnection();
 		Statement statement = connection.createStatement();
-		ResultSet resultSet = statement.executeQuery("SELECT * FROM HELLO");
+		ResultSet resultSet = statement.executeQuery("SELECT * FROM hello");
 
 		Long id = null;
 		while (resultSet.next()) {
-			if (messageToSearchFor.equals(resultSet.getString("MESSAGE"))) {
-				id = resultSet.getLong("ID");
+			if (messageToSearchFor.equals(resultSet.getString("message"))) {
+				id = resultSet.getLong("id");
 			}
 		}
 		resultSet.close();

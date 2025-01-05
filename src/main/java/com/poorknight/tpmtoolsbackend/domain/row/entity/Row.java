@@ -9,7 +9,7 @@ import java.util.List;
 
 @Entity
 @Data
-@Table(name = "\"P1_ROW\"")
+@Table(name = "p1_row")
 public class Row {
 
 	public Row() {
@@ -39,12 +39,13 @@ public class Row {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "P0_PROJECT_PLAN_FK", nullable = false)
+	@Column(name = "p0_project_plan_fk", nullable = false)
 	private Long projectPlanId;
 
 	@Column(nullable = false)
 	private String title;
 
 	@OneToMany(mappedBy = "rowId", fetch = FetchType.EAGER)
+	@OrderBy("id")
 	private List<Task> taskList;
 }

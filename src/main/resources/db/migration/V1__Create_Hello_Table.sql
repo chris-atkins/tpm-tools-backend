@@ -1,13 +1,10 @@
 
-CREATE TABLE HELLO (
-    ID int NOT NULL AUTO_INCREMENT,
-    MESSAGE varchar(255),
-
-    PRIMARY KEY (ID)
+CREATE TABLE hello (
+    id SERIAL primary key ,
+    message varchar(255)
 );
 
-INSERT INTO HELLO (MESSAGE)
-VALUES
-        ("Oh hello from the db!"),
-        ("DB says hi :) "),
-        ("DB is angry :(");
+INSERT INTO hello (message)
+VALUES ('Oh hello from the db!'),
+        ('DB says hi :) '),
+        ('DB is angry :(');

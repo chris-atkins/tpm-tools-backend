@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "P0_PROJECT_PLAN")
+@Table(name = "p0_project_plan")
 public class ProjectPlan {
 
 	@Id
