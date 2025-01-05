@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 public class BaseTestWithDatabase {
 
-	public static PostgreSQLContainer<?> db = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
+	public static PostgreSQLContainer<?> db = new PostgreSQLContainer<>("postgres:16-alpine")
 			.withDatabaseName("tpm_tools")
 			.withUsername("Chris")
 			.withPassword("theBestPassword");
