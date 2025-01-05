@@ -1,5 +1,5 @@
 plugins {
-	id 'org.springframework.boot' version '3.1.1'
+	id 'org.springframework.boot' version '3.3.3'
 	id 'io.spring.dependency-management' version '1.1.0'
 	id 'java'
 	id "io.freefair.lombok" version "6.5.0.3"
@@ -25,17 +25,17 @@ dependencies {
 
 	implementation 'com.google.guava:guava:31.1-jre'
 
-	implementation 'org.flywaydb:flyway-core:8.5.13'
-	implementation 'org.flywaydb:flyway-mysql:8.5.13'
+	implementation 'org.flywaydb:flyway-core:10.18.2'
+	runtimeOnly 'org.flywaydb:flyway-database-postgresql:10.18.2'
+
+
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus:1.11.4'
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-
-	// downgrading hibernate -> can be removed when 6.3 starts being used. ref: https://hibernate.atlassian.net/browse/HHH-16593
-	implementation 'org.hibernate.orm:hibernate-core:6.1.7.Final'
-
+	implementation 'org.postgresql:postgresql'
 
 	testImplementation 'org.apache.httpcomponents.client5:httpclient5'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -43,14 +43,13 @@ dependencies {
 
 
 	testImplementation "org.testcontainers:junit-jupiter"
-	testImplementation 'org.testcontainers:mysql'
+	testImplementation "org.testcontainers:postgresql:1.20.1"
 	testImplementation 'org.assertj:assertj-core:3.23.1'
 	testImplementation 'org.skyscreamer:jsonassert:1.5.1'
 
 	compileOnly 'org.projectlombok:lombok'
 	testCompileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-
 }
 
 tasks.named('test') {
