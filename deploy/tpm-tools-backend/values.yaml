@@ -1,0 +1,14 @@
+projectName: tpm-tools
+appName: tpm-tools-backend
+
+replicaCount: 1
+
+containerRegistry: registry.digitalocean.com/chris-container-registry
+imageLabel: backend-latest
+
+servicePort: 80
+containerPort: 8080
+
+dbConnectionString: hidden
+dbUser: hidden
+dbPassword: hidden

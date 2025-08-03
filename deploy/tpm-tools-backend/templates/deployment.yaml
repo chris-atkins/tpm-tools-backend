@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: prod
+  name: {{ .Values.appName }}
+  labels:
+    app: {{ .Values.appName }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+    spec:
+      containers:
+        - image: "{{ .Values.containerRegistry }}/{{ .Values.projectName }}:{{ .Values.imageLabel }}"
+          imagePullPolicy: Always
+          name: {{ .Values.appName }}
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+          env:
+            - name: DB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.appName }}-secret"
+                  key: dbConnectionString
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.appName }}-secret"
+                  key: dbUser
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.appName }}-secret"
+                  key: dbPassword
+
+
